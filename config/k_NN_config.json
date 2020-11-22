@@ -1,0 +1,7 @@
+{
+    "experiment_name": "1-NN",
+    "algorithm": {
+        "type": "kNN",
+        "n_neighbors": 1
+    }
+}
