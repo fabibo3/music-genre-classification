@@ -9,6 +9,7 @@ import numpy as np
 from tqdm import tqdm
 from utils.folders import get_train_data_path, get_test_data_path, get_preprocessed_data_path
 import argparse
+from audioread.exceptions import NoBackendError
 
 def calculate_mfcc(input_path: str, output_file: str, n_mfcc=40, n_samples=-1):
     """
@@ -23,7 +24,12 @@ def calculate_mfcc(input_path: str, output_file: str, n_mfcc=40, n_samples=-1):
         out_file.write(f"File Name, MFCC Coefficients 1-{n_mfcc}\n")
         for f in tqdm(files, desc="Calculate MFCCs..."):
             file_name = os.path.join(input_path, f)
-            y, sr = librosa.load(file_name)
+            try:
+                y, sr = librosa.load(file_name)
+            except(NoBackendError):
+                print(f"File {file_name} could not be read, mfcc is not calculated")
+                continue
+
             mfcc = librosa.feature.mfcc(y, sr, n_mfcc=n_mfcc)
 
             # Take mean of frames
@@ -32,6 +38,7 @@ def calculate_mfcc(input_path: str, output_file: str, n_mfcc=40, n_samples=-1):
             # Write to file
             line = ",".join(map(str, mfcc.tolist()))
             line = line + "\n"
+            line = f + "," + line
             out_file.write(line)
 
 

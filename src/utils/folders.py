@@ -35,10 +35,10 @@ def get_test_data_path() -> str:
     """
     return f'{data_base_folder}/test/Test'
 
-def get_preprocessed_data_path(dataset: str) -> str:
+def get_preprocessed_data_path(split: str) -> str:
     """
     Get either train or test set path of preprocessed features
-    @param dataset: "train" or "test"
+    @param split: "train" or "test"
     """
-    assert(dataset=="test" or dataset=="train")
-    return f'{data_base_folder}/{dataset}/preprocessed'
+    assert(split=="test" or split=="train")
+    return f'{data_base_folder}/{split}/preprocessed'
