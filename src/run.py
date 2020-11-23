@@ -17,7 +17,7 @@ def run():
     # Run experiment for every config file
     for i, cf in enumerate(config_file_names):
         print(f"Start experiment {i+1} of {len(config_file_names)}")
-        run_experiment(cf+".json")
+        run_experiment(cf)
 
 
 

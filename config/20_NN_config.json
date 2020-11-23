@@ -1,0 +1,8 @@
+{
+    "experiment_name": "20-NN",
+    "algorithm": {
+        "type": "kNN",
+        "n_neighbors": 20,
+	"weights": "uniform"
+    }
+}

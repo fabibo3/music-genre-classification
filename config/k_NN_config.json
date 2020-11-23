@@ -1,8 +1,14 @@
 {
-    "experiment_name": "1-NN",
+    "experiment_name": "kNN-39-34",
     "algorithm": {
         "type": "kNN",
-        "n_neighbors": 1,
-	"weights": "uniform"
+        "n_neighbors": 39,
+        "n_mfcc_coefficients": 34,
+	"weights": "distance"
+    },
+    "mode": "test",
+    "dataset": {
+        "train_split": 80,
+        "val_split": 20
     }
 }

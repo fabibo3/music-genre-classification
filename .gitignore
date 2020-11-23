@@ -1,4 +1,4 @@
 data/
 *.swp
 __pycache__/
-
+experiments/

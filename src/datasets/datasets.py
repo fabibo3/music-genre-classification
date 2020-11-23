@@ -15,9 +15,11 @@ class MusicDataset(object):
     """
     Class containing the music data
     """
-    def __init__(self, split: str, mfcc_file: str="mfccs.csv"):
+    def __init__(self, split: str, mfcc_file: str="mfccs.csv", files=None):
         """
         @param split: "train" or "test"
+        @param mfcc_file: Opionally, specify the name of the mfcc file
+        @param files: Optional, predefine the files in the dataset
         """
         self._root_dir_name = get_dataset_base_folder()
         self._genres_file = self._root_dir_name + "/genres.csv"
@@ -31,7 +33,10 @@ class MusicDataset(object):
             self._label_file = os.path.join(self._root_dir_name, "test.csv")
         else:
             raise ValueError("Split not recognized!")
-        self._all_files = sorted(os.listdir(self._file_dir))
+        if(files==None):
+            self._all_files = sorted(os.listdir(self._file_dir))
+        else:
+            self._all_files = sorted(files)
         self._mfcc_file = os.path.join(get_preprocessed_data_path(self._split), mfcc_file)
         self._mfccs, self._valid_files = self.get_mfccs(self._mfcc_file)
         self._labels = self.get_labels(self._label_file, self._split)
@@ -77,7 +82,8 @@ class MusicDataset(object):
             labels = {}
             for line in reader:
                 if(split=="train"):
-                    labels[line[0]+".mp3"] = int(line[1])
+                    if(line[0]+".mp3" in self._all_files):
+                        labels[line[0]+".mp3"] = int(line[1])
                 else:
                     labels[line[0]+".mp3"] = -1
 
@@ -95,8 +101,9 @@ class MusicDataset(object):
             mfccs = []
             valid_files = []
             for line in reader:
-                valid_files.append(line[0])
-                mfccs.append([float(x) for x in line[1:]])
+                if(line[0] in self._all_files):
+                    valid_files.append(line[0])
+                    mfccs.append([float(x) for x in line[1:]])
 
         sorted_indices = np.argsort(valid_files)
         valid_files = [valid_files[s] for s in sorted_indices]
