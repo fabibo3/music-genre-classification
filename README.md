@@ -1,2 +1,2 @@
 # music-genre-classification
-Machine learning project dealing with classification of musique files into music genres
+Machine learning project dealing with classification of music files into music genres
