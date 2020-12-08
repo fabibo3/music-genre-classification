@@ -14,6 +14,10 @@ config_folder = f'{root_folder}/config'
 data_base_folder = f'{root_folder}/data'
 experiments_folder = f'{root_folder}/experiments'
 
+def set_dataset_base_folder(folder: str):
+    global data_base_folder 
+    data_base_folder = folder
+
 def get_experiment_folder(experiment_name: str) -> str:
     return f'{experiments_folder}/{experiment_name}'
 
