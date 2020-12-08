@@ -4,6 +4,7 @@ k-Nearest-Neighbors algorihm
 __author__ = "Fabian Bongratz"
 
 import numpy as np
+import torch
 from datasets.datasets import MusicDataset
 from utils.utils import precision
 from catboost import CatBoostClassifier, Pool, cv
@@ -38,11 +39,21 @@ def run_decisionTree(config: dict,
     _, X_train, y_train = train_dataset.get_whole_dataset_as_pd()
     test_files, X_test, _ = test_dataset.get_whole_dataset_as_pd()
 
+    # GPU
+    if(torch.cuda.is_available()):
+        task_type = 'GPU'
+        devices = torch.cuda.get_current_device()
+    else:
+        task_type = 'CPU'
+        devices = None
+
     model = CatBoostClassifier(**params)
     model.fit(
             X_train, y_train,
             verbose=10,
-            plot=True
+            plot=True,
+            task_type=task_type,
+            devices=devices
     )
     result = model.predict(X_test, prediction_type='Class',
                                 verbose=10).flatten()
@@ -88,6 +99,14 @@ def search_CatBoost_parameters(config: dict,
     if(val_dataset != None):
         _, X_val, y_val = val_dataset.get_whole_dataset_as_pd()
 
+    # GPU
+    if(torch.cuda.is_available()):
+        task_type = 'GPU'
+        devices = torch.cuda.get_current_device()
+    else:
+        task_type = 'CPU'
+        devices = None
+
     if(not internal_cv):
         # No internal cross validation during training
         for i_it, it in enumerate(iterations):
@@ -101,7 +120,9 @@ def search_CatBoost_parameters(config: dict,
                 model.fit(
                         X_train, y_train,
                         eval_set=(X_val, y_val),
-                        verbose=10
+                        verbose=10,
+                        task_type=task_type,
+                        devices=devices
                 )
                 params = model.get_params()
                 parameter_names = list(params.keys())
@@ -116,6 +137,9 @@ def search_CatBoost_parameters(config: dict,
         params['loss_function'] = loss_function
         params['iterations'] = iterations
         params['custom_metric'] = 'Accuracy'
+        params['task_type'] = task_type
+        params['devices'] = devices
+
         best_value = 0.0
         best_iter = 0
         for i_lr, lr in enumerate(learning_rates):

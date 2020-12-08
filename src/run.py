@@ -12,7 +12,7 @@ def run():
     parser.add_argument("--data_base_dir",
                         nargs='?',
                         dest='data_base_dir',
-                        action='store_const'
+                        action='store_const',
                         type=str,
                         default=None,
                         help="The base directory of all data")
