@@ -9,10 +9,7 @@ from utils.folders import set_dataset_base_folder, get_dataset_base_folder
 
 def run():
     parser = ArgumentParser(description="Parameters")
-    parser.add_argument("--data_base_dir",
-                        nargs='?',
-                        dest='data_base_dir',
-                        action='store_const',
+    parser.add_argument('--data_base_dir',
                         type=str,
                         default=None,
                         help="The base directory of all data")
