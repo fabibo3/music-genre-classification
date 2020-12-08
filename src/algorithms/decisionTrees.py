@@ -46,14 +46,14 @@ def run_decisionTree(config: dict,
     else:
         task_type = 'CPU'
         devices = None
+    params['task_type'] = task_type
+    params['devices'] = devices
 
     model = CatBoostClassifier(**params)
     model.fit(
             X_train, y_train,
             verbose=10,
-            plot=True,
-            task_type=task_type,
-            devices=devices
+            plot=True
     )
     result = model.predict(X_test, prediction_type='Class',
                                 verbose=10).flatten()
@@ -115,14 +115,14 @@ def search_CatBoost_parameters(config: dict,
                         iterations=it,
                         learning_rate=lr,
                         loss_function=loss_function,
+                        task_type=task_type,
+                        devices=devices,
                         custom_metric=['Accuracy']
                 )
                 model.fit(
                         X_train, y_train,
                         eval_set=(X_val, y_val),
-                        verbose=10,
-                        task_type=task_type,
-                        devices=devices
+                        verbose=10
                 )
                 params = model.get_params()
                 parameter_names = list(params.keys())

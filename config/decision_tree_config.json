@@ -1,9 +1,9 @@
 {
-    "experiment_name": "dec-tree-cv2",
+    "experiment_name": "dec-tree-cv3",
     "algorithm": "decision-tree",
     "decision-tree": {
         "type": "decision-tree",
-        "iterations": 2000,
+        "iterations": 3000,
         "learning_rate": [0.01, 0.41, 0.05],
         "loss_function": "MultiClass",
         "early_stop": false
