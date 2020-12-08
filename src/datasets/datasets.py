@@ -10,16 +10,19 @@ from utils.folders import get_dataset_base_folder,\
 import csv
 import os
 import numpy as np
+import pandas as pd
 
 class MusicDataset(object):
     """
     Class containing the music data
     """
-    def __init__(self, split: str, mfcc_file: str="mfccs.csv", files=None):
+    def __init__(self, split: str, mfcc_file: str="mfccs.csv", files=None,
+                 features="adapte"):
         """
         @param split: "train" or "test"
         @param mfcc_file: Opionally, specify the name of the mfcc file
         @param files: Optional, predefine the files in the dataset
+        @param features: "mfcc" or "adapte"
         """
         self._root_dir_name = get_dataset_base_folder()
         self._genres_file = self._root_dir_name + "/genres.csv"
@@ -37,8 +40,25 @@ class MusicDataset(object):
             self._all_files = sorted(os.listdir(self._file_dir))
         else:
             self._all_files = sorted(files)
-        self._mfcc_file = os.path.join(get_preprocessed_data_path(self._split), mfcc_file)
-        self._mfccs, self._valid_files = self.get_mfccs(self._mfcc_file)
+
+        # Choose features
+        if(features=="mfcc"):
+            mfcc_file = os.path.join(get_preprocessed_data_path(self._split), mfcc_file)
+            self._features, self._valid_files = self.get_mfccs(mfcc_file)
+            self._feature_names = "mfcc only"
+        elif(features=="adapte"):
+            features_file = os.path.join(get_dataset_base_folder(),
+                                                      "features_adapte.csv")
+            feature_header_file = os.path.join(get_dataset_base_folder(),
+                                               "features_head.csv")
+            self._feature_names =\
+                pd.read_csv(filepath_or_buffer=feature_header_file, sep=",")
+            self._features, self._valid_files =\
+                self.get_features_from_file(features_file)
+        else:
+            raise ValueError("Unknown features")
+
+
         self._labels = self.get_labels(self._label_file, self._split)
 
     def __len__(self):
@@ -67,12 +87,17 @@ class MusicDataset(object):
         """
         file_no = self._valid_files[index]
         return file_no,\
-                self._mfccs[index],\
+                self._features[index],\
                 self._labels[file_no]
 
     def get_whole_dataset(self) -> (list, np.ndarray, dict):
         valid_labels = [self._labels[f] for f in self._valid_files]
-        return self._valid_files, self._mfccs, valid_labels
+        return self._valid_files, self._features, valid_labels
+
+    def get_whole_dataset_as_pd(self) -> (list, pd.DataFrame, pd.DataFrame):
+        valid_labels = [self._labels[f] for f in self._valid_files]
+        return self._valid_files, self._pd_data, valid_labels
+
 
     def get_labels(self, label_file: str, split: str) -> dict:
         with open(label_file, 'r') as f:
@@ -128,4 +153,32 @@ class MusicDataset(object):
                 genres[int(row[0])] = row[1]
 
         return genres
+
+    def get_features_from_file(self, features_file: str) -> (pd.DataFrame, list):
+        """
+        Load features from a file and return the data as panda DataFrame and
+        the names of the valid files
+        """
+        label_data = pd.read_csv(filepath_or_buffer=self._label_file, sep=",")
+        iter_csv = pd.read_csv(filepath_or_buffer=features_file, sep=",",
+                               iterator=True, chunksize=10000)
+        feature_data = pd.concat([chunk for chunk in iter_csv])
+
+        ids = [f.split(".")[0] for f in self._all_files]
+        label_data = label_data[label_data['track_id'].isin(ids)]
+        data = pd.merge(label_data, feature_data,
+                        on='track_id')
+
+        if(self._split != "test"):
+            data = data.drop('genre_id', axis=1)
+
+        valid_files = [f"{v:06}" + ".mp3" for v in data['track_id'].values]
+
+        self._pd_data = data.drop('track_id', axis=1)
+        self._pd_labels = label_data.drop('track_id', axis=1)
+
+        data = data.drop('track_id', axis=1)
+        print(f"Shape of dataset: {data.shape}")
+
+        return data.values, valid_files
 

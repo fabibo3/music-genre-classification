@@ -5,17 +5,21 @@ __author__ = "Fabian Bongratz"
 
 import os
 import random
+import numpy as np
 from shutil import copyfile
 from utils.config import load_config_file
 from utils.folders import get_experiment_folder,\
                             get_config_file_path,\
                             get_train_data_path
 from algorithms.kNN import run_kNN, search_kNN_parameters
+from algorithms.decisionTrees import search_CatBoost_parameters,\
+run_decisionTree
 from datasets.datasets import MusicDataset
 
 # Keys of the json config file
 _experiment_name_key = "experiment_name"
 _algorithm_name_key = "algorithm"
+_search_param_config_key = "parameter-search"
 
 def run_experiment(config_file: str):
     """
@@ -41,32 +45,78 @@ def search_parameters(config: str):
     """
     Find good hyperparameters by evaluation on validation split
     """
-    print("#"*50)
     # Define datasets
     dataset_config = config["dataset"]
     train_split = dataset_config["train_split"]
     val_split = dataset_config["val_split"]
+
+    search_param_config = config[_search_param_config_key]
+
+    # Cross validation on/off
+    cross_val_on = search_param_config.get("cross_validation", False)
+    if(cross_val_on and val_split > 0):
+        n_runs = int(100/val_split)
+    else:
+        n_runs = 1
+
+    parameter_names = []
+    parameter_sets = []
+    results = []
+ 
+    # Read files
     all_files = os.listdir(get_train_data_path())
     random.shuffle(all_files)
     n_train = int(train_split/100.0 * len(all_files))
     n_val = int(val_split/100.0 * len(all_files))
-    train_dataset = MusicDataset(split="train",
-                                 mfcc_file="mfccs.csv",
-                                 files=all_files[:n_train])
-    print(f"Using {len(train_dataset)} training files")
-    val_dataset = MusicDataset(split="train",
-                               mfcc_file="mfccs.csv",
-                               files=all_files[-n_val:])
-    print(f"Using {len(val_dataset)} validation files")
-    print("Datasets created")
 
-    # Algorithm configuration
-    algo_config = config[_algorithm_name_key]
+    print("#"*50)
+    print("Searching for best parameters...")
 
-    if(algo_config["type"]=="kNN"):
-        parameters = search_kNN_parameters(algo_config, train_dataset, val_dataset)
-    else:
-        raise NotImplementedError("Algorithm not implemented!")
+    for i in range(n_runs):
+        train_dataset = MusicDataset(split="train",
+                                     mfcc_file="mfccs.csv",
+                                     files=all_files[:n_train])
+        print(f"Using {len(train_dataset)} training files")
+        val_dataset = MusicDataset(split="train",
+                                   mfcc_file="mfccs.csv",
+                                   files=all_files[-n_val:])
+        print(f"Using {len(val_dataset)} validation files")
+        print("Datasets created")
+
+        # Algorithm configuration
+        algo = config[_algorithm_name_key]
+        algo_config = config[algo]
+
+        if(algo =="kNN"):
+            parameter_names, parameter_sets, cur_results = search_kNN_parameters(algo_config, train_dataset, val_dataset)
+        elif(algo == "decision-tree"):
+            parameter_names, parameter_sets, cur_results = search_CatBoost_parameters(algo_config, train_dataset, val_dataset)
+        else:
+            raise NotImplementedError("Algorithm not implemented!")
+
+        assert(len(parameter_names) == len(parameter_sets[0]))
+
+        results.append(cur_results)
+
+        # Rotate files
+        all_files = all_files[-n_val:] + all_files[:n_train]
+
+
+    # Get the best configuration
+    results = np.median(np.asarray(results), axis=0)
+    max_res = np.max(results)
+    imax = np.argmax(results)
+
+    print("#"*50)
+    print(f"Best value: {max_res}")
+    print("Best parameters found:")
+
+    # Extract corresponding parameters
+    parameters = {}
+    for i,pn in enumerate(parameter_names):
+        param_choice = parameter_sets[imax][i]
+        print(f"{pn}: {param_choice}")
+        parameters.update({pn: param_choice})
 
     # Write parameters to csv
     exp_name = config[_experiment_name_key]
@@ -92,7 +142,8 @@ def run_test(config: str):
     print("Datasets created")
 
     # Algorithm configuration
-    algo_config = config[_algorithm_name_key]
+    algo = config[_algorithm_name_key]
+    algo_config = config[algo]
 
     # Run algorithm defined by the config
     predictions = run_algorithm(algo_config, test_dataset)
@@ -118,6 +169,9 @@ def run_algorithm(algo_config: str, dataset: MusicDataset):
     if(algo_config["type"]=="kNN"):
         train_dataset = MusicDataset(split="train", mfcc_file="mfccs.csv")
         predictions = run_kNN(algo_config, train_dataset, dataset)
+    elif(algo_config["type"]=="decision-tree"):
+        train_dataset = MusicDataset(split="train", mfcc_file="mfccs.csv")
+        predictions = run_decisionTree(algo_config, train_dataset, dataset)
     else:
         raise ValueError("Algorithm not known!")
 
@@ -125,6 +179,7 @@ def run_algorithm(algo_config: str, dataset: MusicDataset):
     all_ids = dataset.get_all_files()
     for i in all_ids:
         if(i not in predictions):
+            print(f"[Warning]: No predicted value for {i}")
             predictions[i] = 1
 
     print("Algorithm finished")

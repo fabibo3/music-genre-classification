@@ -2,3 +2,4 @@ data/
 *.swp
 __pycache__/
 experiments/
+catboost_info/

@@ -1,12 +1,13 @@
 {
-    "experiment_name": "kNN-features-cv",
+    "experiment_name": "kNN-features-test",
     "algorithm": "kNN",
     "kNN": {
-        "n_neighbors": [2, 20, 2] ,
-        "n_mfcc_coefficients": [10, 40, 4],
+        "type": "kNN",
+        "n_neighbors": 14,
+        "n_mfcc_coefficients": 34 ,
         "weights": "distance"
     },
-    "mode": "parameter-search",
+    "mode": "test",
     "dataset": {
         "train_split": 80,
         "val_split": 20

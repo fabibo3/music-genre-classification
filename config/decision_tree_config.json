@@ -1,0 +1,20 @@
+{
+    "experiment_name": "dec-tree-cv",
+    "algorithm": "decision-tree",
+    "decision-tree": {
+        "type": "decision-tree",
+        "iterations": [200, 201, 1],
+        "learning_rate": [0.001, 0.4, 0.05],
+        "loss_function": "MultiClass",
+        "early_stop": false
+    },
+    "mode": "parameter-search",
+    "dataset": {
+        "train_split": 80,
+        "val_split": 20,
+        "features": "adapte"
+    },
+    "parameter-search": {
+        "cross_validation": true
+    }
+}

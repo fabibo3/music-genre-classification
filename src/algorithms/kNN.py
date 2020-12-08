@@ -61,9 +61,12 @@ def search_kNN_parameters(config: dict,
                           val_dataset: MusicDataset):
     """
     Perform grid-hyperparameter search for a kNN classifier
+
+    Returns:
+        - a list of the names of the parameters
+        - a list of tried parameter configurations
+        - a list of corresponding results
     """
-    print("#"*50)
-    print("Searching for best parameters...")
     n_neighbors = np.arange(config[_n_neighbors_key][0],
                             config[_n_neighbors_key][1],
                             config[_n_neighbors_key][2])
@@ -71,11 +74,13 @@ def search_kNN_parameters(config: dict,
                             config[_n_mfcc_coeffs_key][1],
                             config[_n_mfcc_coeffs_key][2])
     kNN_config=config.copy()
-    result_shape = (len(n_neighbors), len(n_mfcc_coeffs))
-    results = np.zeros(result_shape)
+    parameter_names = ["n_neighbors", "n_mfcc_coefficients"]
+    parameter_sets = []
+    results = []
 
     for i_k,k in enumerate(n_neighbors):
         for i_n_coeffs,n_coeffs in enumerate(n_mfcc_coeffs):
+            parameter_sets.append([k, n_coeffs])
             kNN_config[_n_neighbors_key] = k
             kNN_config[_n_mfcc_coeffs_key] = n_coeffs
 
@@ -86,15 +91,8 @@ def search_kNN_parameters(config: dict,
             _, _, ground_truth = val_dataset.get_whole_dataset()
             predictions = list(predictions.values())
             assert(len(predictions)==len(ground_truth))
-            results[i_k,i_n_coeffs] = precision(np.asarray(predictions),
-                                                np.asarray(ground_truth)) 
+            results.append(precision(np.asarray(predictions),
+                                                np.asarray(ground_truth)))
 
-    # Get best results
-    best_indices = np.unravel_index(np.argmax(results), result_shape)
-    best_k = n_neighbors[best_indices[0]]
-    best_n_mfcc = n_mfcc_coeffs[best_indices[1]]
-
-    return {"n_neighbors": best_k, "n_mfcc_coefficients": best_n_mfcc}
-
-    
+    return parameter_names, parameter_sets, results
 
