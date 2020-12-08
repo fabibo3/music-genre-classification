@@ -102,7 +102,7 @@ def search_CatBoost_parameters(config: dict,
     # GPU
     if(torch.cuda.is_available()):
         task_type = 'GPU'
-        devices = torch.cuda.get_current_device()
+        devices = torch.cuda.current_device()
     else:
         task_type = 'CPU'
         devices = None
