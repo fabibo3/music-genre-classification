@@ -24,7 +24,7 @@ def run():
 
     if(not os.path.isdir(get_dataset_base_folder())):
         if(data_base_dir is not None):
-            set_data_base_folder(data_base_dir)
+            set_dataset_base_folder(data_base_dir)
         else:
             raise ValueError("Please enter data directory")
 
