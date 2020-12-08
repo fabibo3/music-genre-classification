@@ -1,10 +1,10 @@
 {
-    "experiment_name": "dec-tree-test2",
+    "experiment_name": "dec-tree-test-tuned2",
     "algorithm": "decision-tree",
     "decision-tree": {
         "type": "decision-tree",
-        "iterations": 100,
-        "learning_rate": 1.0,
+        "iterations": 500,
+        "learning_rate": 0.2,
         "loss_function": "MultiClass",
         "early_stop": false
     },
@@ -15,6 +15,6 @@
         "features": "adapte"
     },
     "parameter-search": {
-        "cross_validation": true
+        "cross_validation": false
     }
 }

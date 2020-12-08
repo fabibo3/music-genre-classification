@@ -53,7 +53,7 @@ def search_parameters(config: str):
     search_param_config = config[_search_param_config_key]
 
     # Cross validation on/off
-    cross_val_on = search_param_config.get("cross_validation", False)
+    cross_val_on = search_param_config.get("exterior_cross_validation", False)
     if(cross_val_on and val_split > 0):
         n_runs = int(100/val_split)
     else:
@@ -77,10 +77,14 @@ def search_parameters(config: str):
                                      mfcc_file="mfccs.csv",
                                      files=all_files[:n_train])
         print(f"Using {len(train_dataset)} training files")
-        val_dataset = MusicDataset(split="train",
-                                   mfcc_file="mfccs.csv",
-                                   files=all_files[-n_val:])
-        print(f"Using {len(val_dataset)} validation files")
+        if(val_split > 0):
+            val_dataset = MusicDataset(split="train",
+                                       mfcc_file="mfccs.csv",
+                                       files=all_files[-n_val:])
+            print(f"Using {len(val_dataset)} validation files")
+        else:
+            val_dataset = None
+
         print("Datasets created")
 
         # Algorithm configuration
@@ -88,9 +92,19 @@ def search_parameters(config: str):
         algo_config = config[algo]
 
         if(algo =="kNN"):
-            parameter_names, parameter_sets, cur_results = search_kNN_parameters(algo_config, train_dataset, val_dataset)
+            parameter_names, \
+                    parameter_sets,\
+                    cur_results = search_kNN_parameters(algo_config,
+                                                        train_dataset,
+                                                        val_dataset)
         elif(algo == "decision-tree"):
-            parameter_names, parameter_sets, cur_results = search_CatBoost_parameters(algo_config, train_dataset, val_dataset)
+            internal_cross_val_on = search_param_config.get("internal_cross_validation", False)
+            parameter_names,\
+                    parameter_sets,\
+                    cur_results = search_CatBoost_parameters(algo_config,
+                                                             train_dataset,
+                                                             val_dataset,
+                                                             internal_cv=internal_cross_val_on)
         else:
             raise NotImplementedError("Algorithm not implemented!")
 

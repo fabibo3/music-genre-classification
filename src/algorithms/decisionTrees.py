@@ -6,7 +6,7 @@ __author__ = "Fabian Bongratz"
 import numpy as np
 from datasets.datasets import MusicDataset
 from utils.utils import precision
-from catboost import CatBoostClassifier
+from catboost import CatBoostClassifier, Pool, cv
 from sklearn.model_selection import train_test_split
 
 _n_iterations_key = "iterations"
@@ -38,13 +38,9 @@ def run_decisionTree(config: dict,
     _, X_train, y_train = train_dataset.get_whole_dataset_as_pd()
     test_files, X_test, _ = test_dataset.get_whole_dataset_as_pd()
 
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train,
-                                                      train_size=train_split, random_state=1234)
-
     model = CatBoostClassifier(**params)
     model.fit(
             X_train, y_train,
-            eval_set=(X_val, y_val),
             verbose=10,
             plot=True
     )
@@ -57,8 +53,9 @@ def run_decisionTree(config: dict,
     return predictions
 
 def search_CatBoost_parameters(config: dict,
-                   train_dataset: MusicDataset,
-                   val_dataset: MusicDataset):
+                               train_dataset: MusicDataset,
+                               val_dataset: MusicDataset=None,
+                               internal_cv=False):
     """
     Fit a CatBoostClassifier using train and validation set
     Returns:
@@ -67,12 +64,20 @@ def search_CatBoost_parameters(config: dict,
         - a list of corresponding results
     """
     # Get parameters
-    iterations = np.arange(config[_n_iterations_key][0],
-                            config[_n_iterations_key][1],
-                            config[_n_iterations_key][2])
-    learning_rates = np.arange(config[_learning_rate_key][0],
-                            config[_learning_rate_key][1],
-                            config[_learning_rate_key][2])
+    if(type(config[_n_iterations_key])==list):
+        iterations = np.arange(config[_n_iterations_key][0],
+                                config[_n_iterations_key][1],
+                                config[_n_iterations_key][2])
+    else:
+        iterations = config[_n_iterations_key]
+
+    if(type(config[_learning_rate_key])==list):
+        learning_rates = np.arange(config[_learning_rate_key][0],
+                                config[_learning_rate_key][1],
+                                config[_learning_rate_key][2])
+    else:
+        learning_rates = config[_learning_rate_key]
+
     loss_function = config.get("loss_function", "CrossEntropy")
     parameter_names = []
     parameter_sets = []
@@ -80,28 +85,63 @@ def search_CatBoost_parameters(config: dict,
 
     # Get data
     _, X_train, y_train = train_dataset.get_whole_dataset_as_pd()
-    _, X_val, y_val = val_dataset.get_whole_dataset_as_pd()
+    if(val_dataset != None):
+        _, X_val, y_val = val_dataset.get_whole_dataset_as_pd()
 
-    for i_it, it in enumerate(iterations):
+    if(not internal_cv):
+        # No internal cross validation during training
+        for i_it, it in enumerate(iterations):
+            for i_lr, lr in enumerate(learning_rates):
+                model = CatBoostClassifier(
+                        iterations=it,
+                        learning_rate=lr,
+                        loss_function=loss_function,
+                        custom_metric=['Accuracy']
+                )
+                model.fit(
+                        X_train, y_train,
+                        eval_set=(X_val, y_val),
+                        verbose=10
+                )
+                params = model.get_params()
+                parameter_names = list(params.keys())
+                parameter_sets.append(list(params.values()))
+                best_score = model.get_best_score()
+                results.append(best_score['validation']['Accuracy'])
+                best_iter = model.get_best_iteration()
+                print("Best iteration: " + str(best_iter))
+    else:
+        # Use catboost cross validation procedure
+        params = {}
+        params['loss_function'] = loss_function
+        params['iterations'] = iterations
+        params['custom_metric'] = 'Accuracy'
+        best_value = 0.0
+        best_iter = 0
         for i_lr, lr in enumerate(learning_rates):
-            model = CatBoostClassifier(
-                    iterations=it,
-                    learning_rate=lr,
-                    loss_function=loss_function,
-                    custom_metric=['Accuracy']
+            params['learning_rate'] = lr
+            cv_data = cv(
+                    params = params,
+                    pool = Pool(X_train, label=y_train),
+                    fold_count=5,
+                    shuffle=True,
+                    partition_random_seed=0,
+                    plot=True,
+                    stratified=False,
+                    verbose=50
             )
-            model.fit(
-                    X_train, y_train,
-                    eval_set=(X_val, y_val),
-                    verbose=10
-            )
-            params = model.get_params()
-            parameter_names = list(params.keys())
+            res_value = np.max(cv_data['test-Accuracy-mean'])
+            res_iter = np.argmax(cv_data['test-Accuracy-mean'])
+            params['best_iteration'] = res_iter
+
+            print(f"Best iteration for lr {lr}: {res_iter} with val accuracy {res_value}")
+
+            results.append(res_value)
             parameter_sets.append(list(params.values()))
-            best_score = model.get_best_score()
-            results.append(best_score['validation']['Accuracy'])
-            best_iter = model.get_best_iteration()
-            print("Best iteration: " + str(best_iter))
+            parameter_names = list(params.keys())
+
+            # Remove entry from dict since it is used as input for cv again
+            params.pop('best_iteration')
 
     return parameter_names, parameter_sets, results
 
