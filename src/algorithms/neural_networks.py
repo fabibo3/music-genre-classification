@@ -374,7 +374,7 @@ class SmallNet5(nn.Module):
     Implementation of a small neural network consisting of 5 fully connected
     hidden layers and ReLU nonlinearities
     """
-    def __init__(self, input_dim, channels=(1024, 512, 256, 128, 64), num_classes=8):
+    def __init__(self, input_dim, channels=(2048, 1024, 512, 256, 128), num_classes=8):
         """
         @param input_dim: The dimension of the input vectors
         @param channels: The channel dimensions of the five layers
