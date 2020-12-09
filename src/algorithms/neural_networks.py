@@ -216,7 +216,7 @@ def train_model(model,
     try:
         _ = X_val.shape
         validate = True
-        X_val = torch.tensor(X_val).float()
+        X_val = torch.tensor(X_val).float().to(device)
         label_val = torch.tensor(label_val).long()
         print(f'Using {X_val.shape[0]} validation samples')
     except (NameError, AttributeError) as e:
