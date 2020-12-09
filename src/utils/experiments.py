@@ -14,7 +14,7 @@ from utils.folders import get_experiment_folder,\
 from algorithms.kNN import run_kNN, search_kNN_parameters
 from algorithms.decisionTrees import search_CatBoost_parameters,\
 run_decisionTree
-from algorithms.neural_networks import run_nn, search_nn_parameters 
+from algorithms.neural_networks import run_nn_model, search_nn_parameters 
 from datasets.datasets import MusicDataset
 
 # Keys of the json config file
@@ -167,7 +167,8 @@ def run_test(config: str):
     algo_config = config[algo]
 
     # Run algorithm defined by the config
-    predictions = run_algorithm(algo_config, test_dataset)
+    predictions = run_algorithm(algo_config, test_dataset,
+                                config[_experiment_name_key])
 
     # Write result to csv
     exp_name = config[_experiment_name_key]
@@ -180,7 +181,7 @@ def write_result_to_csv(result_file: str, predictions: dict):
         for k,v in predictions.items():
             f.write(f"{k.split('.')[0]},{str(v)}\n")
 
-def run_algorithm(algo_config: str, dataset: MusicDataset):
+def run_algorithm(algo_config: str, dataset: MusicDataset, experiment_name):
     """
     Run an algorithm defined by algo_config on a certain dataset
     """
@@ -194,8 +195,7 @@ def run_algorithm(algo_config: str, dataset: MusicDataset):
         train_dataset = MusicDataset(split="train", mfcc_file="mfccs.csv")
         predictions = run_decisionTree(algo_config, train_dataset, dataset)
     elif(algo_config["type"]=="neural-network"):
-        train_dataset = MusicDataset(split="train", mfcc_file="mfccs.csv")
-        predictions = run_nn_model(algo_config, train_dataset, dataset)
+        predictions = run_nn_model(algo_config, dataset, experiment_name)
 
     else:
         raise ValueError("Algorithm not known!")

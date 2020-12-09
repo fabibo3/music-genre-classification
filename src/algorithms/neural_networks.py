@@ -17,11 +17,10 @@ from sklearn.model_selection import train_test_split
 _n_epochs_key = "epochs"
 _learning_rate_key = "learning_rate"
 
-def run_nn(test_dataset: MusicDataset,
+def run_nn_model(config: dict,
+           test_dataset: MusicDataset,
               experiment_name: str,
-              train_dataset: MusicDataset=None,
-              config: dict=None,
-              model_path: str=None) -> dict:
+              train_dataset: MusicDataset=None) -> dict:
     """
     Fit a neural network model on the training set and run it on the test set
     afterwards
@@ -33,22 +32,13 @@ def run_nn(test_dataset: MusicDataset,
     ------
     @return predictions for the test data
     """
-    params = {}
-    params['eval_metric'] = 'Accuracy'
-    params['loss_function'] = config.get('loss_function', 'CrossEntropy')
-    params['epochs'] = config.get(_n_epochs_key, 10)
-    params['learning_rate'] = config.get(_learning_rate_key, 0.1)
-    params['l2_regularization'] = config.get('l2_regularization')
-    params['early_stop'] = config.get('early_stop', False)
-    params['lr_decay_every'] = config.get('lr_decay_every', 100)
-    params['train_split'] = config.get('train_split', 80)/100.
-
-    if(model_path==None and config==None):
-        raise ValueError("Please specify either model path or a training\
-                         config")
+    train_split = config.get('train_split', 80)/100.
+    model_path = config.get('model_path', None)
 
     # Test dataset
     test_files, X_test, _ = test_dataset.get_whole_dataset_labels_zero_based()
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    X_test = torch.tensor(X_test).float().to(device)
 
     if(model_path!=None):
         # Apply model
@@ -59,17 +49,17 @@ def run_nn(test_dataset: MusicDataset,
         _, X_train, y_train = train_dataset.get_whole_dataset_labels_zero_based()
         if(config.get('early_stop', False)):
             X_train, y_train, X_val, y_val = train_test_split(X_train, y_train,
-                                                              train_size=params['train_split'])
+                                                              train_size=train_split)
         else:
             X_val = None
             y_val = None
-        model = SmallNet5(X_train.shape[1])
+        model = SmallNet3(X_train.shape[1])
         model = train_model(model, config, X_train, y_train, X_val, y_val,
                             experiment_name)
 
     # Predict
-    result = model.predict(X_test)
-    result = np.argmax(result.detach().numpy(), axis=1)
+    result = model(X_test)
+    result = np.argmax(result.detach().cpu().numpy(), axis=1)
     predictions = {}
     for i, file_id in enumerate(test_files):
         predictions[file_id] = result[i]+1 # Labels not zero_based in the nn model
@@ -264,7 +254,7 @@ def train_model(model,
             model.eval()
             pred = model(X_val)
             if(eval_metric == 'Accuracy'):
-                pred = np.argmax(pred.detach().numpy(), axis=1)
+                pred = np.argmax(pred.detach().cpu().numpy(), axis=1)
                 val_mes = accuracy(pred, label_val.numpy())
             if epoch % log_nth == 0:
                 print('[Epoch {} / {}] VAL acc: {:.3f}'.format(

@@ -1,0 +1,18 @@
+{
+    "experiment_name": "nn-test",
+    "algorithm": "neural-network",
+    "neural-network": {
+        "type": "neural-network",
+        "model_path": "/home/fabi/workspace_python/music-genre-classification/experiments/nn-validated-lr/best.model"
+    },
+    "mode": "test",
+    "dataset": {
+        "train_split": 80,
+        "val_split": 20,
+        "features": "adapte"
+    },
+    "parameter-search": {
+        "exterior_cross_validation": true,
+        "internal_cross_validation": false
+    }
+}
