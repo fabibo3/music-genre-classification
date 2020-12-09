@@ -1,0 +1,26 @@
+{
+    "experiment_name": "nn-cv1",
+    "algorithm": "neural-network",
+    "neural-network": {
+        "type": "neural-network",
+        "epochs": 100,
+        "learning_rate": [0.01, 0.41, 0.05],
+        "loss_function": "CrossEntropy",
+        "early_stop": true,
+        "eval_metric": "Accuracy",
+        "weight_decay": 0.1,
+        "lr_decay_every": 100,
+        "decay_rate": 0.1,
+        "log_nth": 10
+    },
+    "mode": "parameter-search",
+    "dataset": {
+        "train_split": 80,
+        "val_split": 20,
+        "features": "adapte"
+    },
+    "parameter-search": {
+        "exterior_cross_validation": true,
+        "internal_cross_validation": false
+    }
+}

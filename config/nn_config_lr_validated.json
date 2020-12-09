@@ -1,0 +1,26 @@
+{
+    "experiment_name": "nn-5-layer",
+    "algorithm": "neural-network",
+    "neural-network": {
+        "type": "neural-network",
+        "epochs": 1000,
+        "learning_rate": 0.26,
+        "loss_function": "CrossEntropy",
+        "early_stop": true,
+        "eval_metric": "Accuracy",
+        "weight_decay": 0.01,
+        "lr_decay_every": 400,
+        "decay_rate": 0.1,
+        "log_nth": 100
+    },
+    "mode": "parameter-search",
+    "dataset": {
+        "train_split": 80,
+        "val_split": 20,
+        "features": "adapte"
+    },
+    "parameter-search": {
+        "exterior_cross_validation": false,
+        "internal_cross_validation": false
+    }
+}

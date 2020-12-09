@@ -14,6 +14,7 @@ from utils.folders import get_experiment_folder,\
 from algorithms.kNN import run_kNN, search_kNN_parameters
 from algorithms.decisionTrees import search_CatBoost_parameters,\
 run_decisionTree
+from algorithms.neural_networks import run_nn, search_nn_parameters 
 from datasets.datasets import MusicDataset
 
 # Keys of the json config file
@@ -105,6 +106,12 @@ def search_parameters(config: str):
                                                              train_dataset,
                                                              val_dataset,
                                                              internal_cv=internal_cross_val_on)
+
+        elif(algo == "neural-network"):
+            parameter_names,\
+                    parameter_sets,\
+                    cur_results = search_nn_parameters(algo_config,
+                                                       config[_experiment_name_key], train_dataset, val_dataset)
         else:
             raise NotImplementedError("Algorithm not implemented!")
 
@@ -136,7 +143,7 @@ def search_parameters(config: str):
     exp_name = config[_experiment_name_key]
     parameter_file = os.path.join(get_experiment_folder(exp_name), "tuned_parameters.csv")
     write_parameters_to_csv(parameter_file, parameters)
-    print(f"Best model written to {parameter_file}")
+    print(f"Best parameters of search written to {parameter_file}")
 
 def write_parameters_to_csv(parameter_file, parameters):
     with open(parameter_file, 'w') as f:
@@ -186,6 +193,10 @@ def run_algorithm(algo_config: str, dataset: MusicDataset):
     elif(algo_config["type"]=="decision-tree"):
         train_dataset = MusicDataset(split="train", mfcc_file="mfccs.csv")
         predictions = run_decisionTree(algo_config, train_dataset, dataset)
+    elif(algo_config["type"]=="neural-network"):
+        train_dataset = MusicDataset(split="train", mfcc_file="mfccs.csv")
+        predictions = run_nn_model(algo_config, train_dataset, dataset)
+
     else:
         raise ValueError("Algorithm not known!")
 

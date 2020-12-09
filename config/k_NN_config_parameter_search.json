@@ -1,9 +1,9 @@
 {
-    "experiment_name": "kNN-features-cv",
+    "experiment_name": "kNN-features-cv1",
     "algorithm": "kNN",
     "kNN": {
         "n_neighbors": [2, 20, 2] ,
-        "n_mfcc_coefficients": [10, 40, 4],
+        "n_mfcc_coefficients": [518, 519, 1],
         "weights": "distance"
     },
     "mode": "parameter-search",

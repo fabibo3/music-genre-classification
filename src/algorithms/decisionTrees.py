@@ -1,12 +1,12 @@
 """
-k-Nearest-Neighbors algorihm
+Decision Tree algorithm
 """
 __author__ = "Fabian Bongratz"
 
 import numpy as np
 import torch
 from datasets.datasets import MusicDataset
-from utils.utils import precision
+from utils.utils import accuracy
 from catboost import CatBoostClassifier, Pool, cv
 from sklearn.model_selection import train_test_split
 
@@ -26,7 +26,7 @@ def run_decisionTree(config: dict,
     @return predictions for the test data
     """
     params = {}
-    params['custom_metric'] = 'Accuracy'
+    params['eval_metric'] = 'Accuracy'
     params['loss_function'] = config.get('loss_function', 'CrossEntropy')
     params['iterations'] = config.get(_n_iterations_key, 10)
     params['learning_rate'] = config.get(_learning_rate_key, 0.1)
@@ -36,7 +36,14 @@ def run_decisionTree(config: dict,
 
 
     # Get data
-    _, X_train, y_train = train_dataset.get_whole_dataset_as_pd()
+    _, X, y = train_dataset.get_whole_dataset_as_pd()
+    if(early_stop):
+        X_train, X_val, y_train, y_val = train_test_split(X, y, train_size=0.8,
+                                                          random_state=0)
+        eval_set = (X_val, y_val)
+    else:
+        eval_set = None
+
     test_files, X_test, _ = test_dataset.get_whole_dataset_as_pd()
 
     # GPU
@@ -52,7 +59,8 @@ def run_decisionTree(config: dict,
     model = CatBoostClassifier(**params)
     model.fit(
             X_train, y_train,
-            verbose=10,
+            eval_set=eval_set,
+            verbose=50,
             plot=True
     )
     result = model.predict(X_test, prediction_type='Class',

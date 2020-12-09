@@ -1,10 +1,10 @@
 {
-    "experiment_name": "kNN-features-test",
+    "experiment_name": "kNN-features-test2",
     "algorithm": "kNN",
     "kNN": {
         "type": "kNN",
-        "n_neighbors": 14,
-        "n_mfcc_coefficients": 34 ,
+        "n_neighbors": 10,
+        "n_mfcc_coefficients": 518,
         "weights": "distance"
     },
     "mode": "test",

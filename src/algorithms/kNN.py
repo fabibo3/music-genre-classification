@@ -6,7 +6,7 @@ __author__ = "Fabian Bongratz"
 import numpy as np
 from sklearn import neighbors
 from datasets.datasets import MusicDataset
-from utils.utils import precision
+from utils.utils import accuracy
 
 _n_neighbors_key = "n_neighbors"
 _n_mfcc_coeffs_key = "n_mfcc_coefficients"

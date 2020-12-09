@@ -1,12 +1,12 @@
 {
-    "experiment_name": "dec-tree-test-tuned3",
+    "experiment_name": "dec-tree-test-tuned5",
     "algorithm": "decision-tree",
     "decision-tree": {
         "type": "decision-tree",
-        "iterations": 1436,
-        "learning_rate": 0.26,
+        "iterations": 3000,
+        "learning_rate": 0.11,
         "loss_function": "MultiClass",
-        "early_stop": false
+        "early_stop": true
     },
     "mode": "test",
     "dataset": {

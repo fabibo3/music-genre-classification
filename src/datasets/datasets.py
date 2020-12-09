@@ -94,6 +94,10 @@ class MusicDataset(object):
         valid_labels = [self._labels[f] for f in self._valid_files]
         return self._valid_files, self._features, valid_labels
 
+    def get_whole_dataset_labels_zero_based(self) -> (list, np.ndarray, dict):
+        valid_labels = [self._labels[f]-1 for f in self._valid_files]
+        return self._valid_files, self._features, valid_labels
+
     def get_whole_dataset_as_pd(self) -> (list, pd.DataFrame, pd.DataFrame):
         valid_labels = [self._labels[f] for f in self._valid_files]
         return self._valid_files, self._pd_data, valid_labels
