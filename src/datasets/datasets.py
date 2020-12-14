@@ -11,10 +11,12 @@ import csv
 import os
 import numpy as np
 import pandas as pd
+import torch.utils.data
+import pickle
 
 class MusicDataset(object):
     """
-    Class containing the music data
+    Class containing the music data given as .mp3 files
     """
     def __init__(self, split: str, mfcc_file: str="mfccs.csv", files=None,
                  features="adapte"):
@@ -185,4 +187,95 @@ class MusicDataset(object):
         print(f"Shape of dataset: {data.shape}")
 
         return data.values, valid_files
+
+
+class MelSpectroDataset(torch.utils.data.DataLoader):
+    """
+    Class representing a set of melspectrograms provided as .pickle file
+    """
+    def __init__(self, melspectro_file: str,
+                 file_names_file: str=None,
+                 label_file: str=None):
+        """
+        @param melspectro_file: The file containing melspectrograms for a set
+        of music files. The file should be placed in the data directory root
+        folder.
+        @param file_names_file: A file containing the names of the files
+        corresponding to the melspectros
+        @param label_file: A file containing corresponding labels. 
+
+        Attention: All files should contain an equal number of rows if not None
+        and the order of represented files should be the same in each file!
+        """
+        self._root_dir_name = get_dataset_base_folder()
+        if(file_names_file is not None):
+            self._file_names_file = os.path.join(self._root_dir_name, file_names_file)
+            self.contains_file_names = True
+        else:
+            self._file_names_file = None
+            self.contains_file_names = False
+        if(label_file is not None):
+            self._label_file = os.path.join(self._root_dir_name, label_file)
+            self.contains_labels = True
+        else:
+            self._label_file = None
+            self.contains_labels = False
+        self._data_file_name = os.path.join(self._root_dir_name,
+                                            melspectro_file)
+
+        # Load labels if possible
+        if(self.contains_labels):
+            self.labels = pickle.load( open(self._label_file, "rb" ))
+        else:
+            self.labels = None
+        # Load filenames if possible
+        if(self.contains_file_names):
+            self.file_names = pickle.load(open(self._file_names_file, "rb"))
+        else:
+            self.file_names = None
+        # Load melspectros
+        self.data = pickle.load(open(self._data_file_name, "rb"))
+
+        if(self.contains_file_names):
+            assert(self.file_names.shape[0] == self.data.shape[0])
+        if(self.contains_labels):
+            assert(self.labels.shape[0] == self.data.shape[0])
+
+    def __len__(self):
+        return len(self.data[0])
+
+    def __getitem__(self, key):
+        if isinstance(key, slice):
+            # get the start, stop, and step from the slice
+            return [self[ii] for ii in range(*key.indices(len(self)))]
+        elif isinstance(key, int):
+            # handle negative indices
+            if key < 0:
+                key += len(self)
+            if key < 0 or key >= len(self):
+                raise IndexError("The index (%d) is out of range." % key)
+            # get the data from direct index
+            return self.get_item_from_index(key)
+        else:
+            raise TypeError("Invalid argument type.")
+
+    def get_item_from_index(self, index: int) -> (int, np.ndarray, np.array):
+        """
+        Get a dataset element in the following form. If any of the information is not
+        available, None is returned
+        (filename, data, label)
+        """
+        if(self.contains_file_names):
+            fn = self.file_names[index]
+        else:
+            fn = None
+        if(self.contains_labels):
+            label = self.labels[index]
+        else:
+            label = None
+        return fn, self.data[index], label
+
+    def get_whole_dataset(self) -> (np.ndarray, np.ndarray,
+                                    np.ndarray):
+        return self.file_names, self.data, self.labels
 
