@@ -83,8 +83,11 @@ def search_parameters(config: str):
         n_train = int(train_split/100.0 * len(all_files))
         n_val = int(val_split/100.0 * len(all_files))
         all_files = os.listdir(get_train_data_path())
+        # Shuffle
         if(dataset_shuffle):
-            random.shuffle(all_files)
+            data_indices = np.random.permutation(len(all_files))
+        else:
+            data_indices = np.arange(len(all_files))
 
     print("#"*50)
     print("Searching for best parameters...")
@@ -105,12 +108,12 @@ def search_parameters(config: str):
         else:
             train_dataset = MusicDataset(split="train",
                                          mfcc_file="mfccs.csv",
-                                         files=all_files[:n_train])
+                                         files=all_files[data_indices[:n_train]])
             print(f"Using {len(train_dataset)} training files")
             if(val_split > 0):
                 val_dataset = MusicDataset(split="train",
                                            mfcc_file="mfccs.csv",
-                                           files=all_files[-n_val:])
+                                           files=all_files[data_indices[-n_val:]])
                 print(f"Using {len(val_dataset)} validation files")
             else:
                 val_dataset = None
@@ -149,7 +152,6 @@ def search_parameters(config: str):
         results.append(cur_results)
 
         # Rotate files/data samples to get different splits
-        all_files = all_files[-n_val:] + all_files[:n_train]
         data_indices = data_indices[-n_val:] + data_indices[:n_train]
 
 
