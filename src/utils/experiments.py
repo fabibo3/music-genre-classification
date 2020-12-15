@@ -15,7 +15,7 @@ from algorithms.kNN import run_kNN, search_kNN_parameters
 from algorithms.decisionTrees import search_CatBoost_parameters,\
 run_decisionTree
 from algorithms.neural_networks import run_nn_model, search_nn_parameters 
-from datasets.datasets import MusicDataset
+from datasets.datasets import MusicDataset, MelSpectroDataset
 
 # Keys of the json config file
 _experiment_name_key = "experiment_name"
@@ -49,7 +49,9 @@ def search_parameters(config: str):
     # Define datasets
     dataset_config = config["dataset"]
     train_split = dataset_config["train_split"]
-    val_split = dataset_config["val_split"]
+    val_split = dataset_config.get("val_split", 0)
+    dataset_type = dataset_config.get("features", "mp3") #mp3 MusicDataset by default
+    dataset_shuffle = dataset_config.get("shuffle", False) 
 
     search_param_config = config[_search_param_config_key]
 
@@ -60,31 +62,54 @@ def search_parameters(config: str):
     else:
         n_runs = 1
 
+
     parameter_names = []
     parameter_sets = []
     results = []
  
-    # Read files
-    all_files = os.listdir(get_train_data_path())
-    random.shuffle(all_files)
-    n_train = int(train_split/100.0 * len(all_files))
-    n_val = int(val_split/100.0 * len(all_files))
+    # Read files if mp3s are used
+    if(dataset_type=="melspectro"):
+        dataset = MelSpectroDataset("melspectro_songs_train_new.pickle",
+                                    label_file="melspectro_genres_train_new.pickle")
+        _, data, labels = dataset.get_whole_dataset()
+        assert(len(data)==len(labels))
+        n_train = int(train_split/100.0 * len(labels))
+        n_val = int(val_split/100.0 * len(labels))
+        # Shuffle
+        if(dataset_shuffle):
+            permute = np.random.permutation(len(data))
+            data = data[permute]
+            labels = labels[permute]
+    else:
+        n_train = int(train_split/100.0 * len(all_files))
+        n_val = int(val_split/100.0 * len(all_files))
+        all_files = os.listdir(get_train_data_path())
+        if(dataset_shuffle):
+            random.shuffle(all_files)
 
     print("#"*50)
     print("Searching for best parameters...")
 
     for i in range(n_runs):
-        train_dataset = MusicDataset(split="train",
-                                     mfcc_file="mfccs.csv",
-                                     files=all_files[:n_train])
-        print(f"Using {len(train_dataset)} training files")
-        if(val_split > 0):
-            val_dataset = MusicDataset(split="train",
-                                       mfcc_file="mfccs.csv",
-                                       files=all_files[-n_val:])
-            print(f"Using {len(val_dataset)} validation files")
+        if(dataset_type == "melspectro"):
+            # Split into train/validation
+            train_dataset = (data[:n_train], labels[:n_train])
+            print(f"Using {len(train_dataset[0])} training files")
+            if(val_split > 0):
+                val_dataset = (data[-n_val:], labels[-n_val:])
+                print(f"Using {len(val_dataset[0])} validation files")
         else:
-            val_dataset = None
+            train_dataset = MusicDataset(split="train",
+                                         mfcc_file="mfccs.csv",
+                                         files=all_files[:n_train])
+            print(f"Using {len(train_dataset)} training files")
+            if(val_split > 0):
+                val_dataset = MusicDataset(split="train",
+                                           mfcc_file="mfccs.csv",
+                                           files=all_files[-n_val:])
+                print(f"Using {len(val_dataset)} validation files")
+            else:
+                val_dataset = None
 
         print("Datasets created")
 

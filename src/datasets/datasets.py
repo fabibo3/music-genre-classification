@@ -235,6 +235,7 @@ class MelSpectroDataset(torch.utils.data.DataLoader):
             self.file_names = None
         # Load melspectros
         self.data = pickle.load(open(self._data_file_name, "rb"))
+        self.data = np.expand_dims(self.data, axis=1) # torch dimensions
 
         if(self.contains_file_names):
             assert(self.file_names.shape[0] == self.data.shape[0])

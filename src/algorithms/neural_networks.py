@@ -13,6 +13,7 @@ from datasets.datasets import MusicDataset
 from utils.utils import accuracy
 from utils.folders import get_experiment_folder
 from sklearn.model_selection import train_test_split
+from typing import Union
 
 _n_epochs_key = "epochs"
 _learning_rate_key = "learning_rate"
@@ -68,13 +69,14 @@ def run_nn_model(config: dict,
 
 def search_nn_parameters(config: dict,
                          experiment_name: str,
-                         train_dataset: MusicDataset,
-                         val_dataset: MusicDataset=None):
+                         train_dataset: Union[MusicDataset,tuple],
+                         val_dataset: Union[MusicDataset,tuple]=None):
     """
     Fit a neural network model using train and validation set
     @param config: A dict containing training parameters and parameter ranges
-    @param train_dataset: The training split
-    @param val_dataset: The validation split
+    @param train_dataset: The training split, either as a MusicDataset or as a
+    tuple (data, labels)
+    @param val_dataset: The validation split, see train_split
     @param internal_cv: True if cross validation should be done internally
     during training
     ------
@@ -99,14 +101,22 @@ def search_nn_parameters(config: dict,
         learning_rates = config[_learning_rate_key]
         learning_rates = [learning_rates]
 
+    model_architecture = config.get("architecture", "SmallNet5")
+
     parameter_names = []
     parameter_sets = []
     results = []
 
     # Get data
-    _, X_train, y_train = train_dataset.get_whole_dataset_labels_zero_based()
+    if(type(train_dataset)==MusicDataset):
+        _, X_train, y_train = train_dataset.get_whole_dataset_labels_zero_based()
+    else:
+        X_train, y_train = train_dataset
     if(val_dataset != None):
-        _, X_val, y_val = val_dataset.get_whole_dataset_labels_zero_based()
+        if(type(val_dataset)==MusicDataset):
+            _, X_val, y_val = val_dataset.get_whole_dataset_labels_zero_based()
+        else:
+            X_val, y_val = val_dataset
 
     # GPU
     if(torch.cuda.is_available()):
@@ -122,7 +132,12 @@ def search_nn_parameters(config: dict,
     best_iter = 0
     for i_lr, lr in enumerate(learning_rates):
         params['learning_rate'] = lr
-        model = SmallNet5(X_train.shape[1])
+        if(model_architecture=='CNN_2'):
+            model = CNN_2((1, X_train.shape[2], X_train.shape[3]),
+                          dropout_prob=config.get("dropout_prob", 0.5))
+        else:
+            # SmallNet5 by default
+            model = SmallNet5(X_train.shape[1])
         trained_model, \
                 best_epoch,\
                 best_res_out = train_model(model,
@@ -419,3 +434,69 @@ class SmallNet5(nn.Module):
         print('Saving model... {}'.format(path))
         torch.save(self,path)
 
+class CNN_2(nn.Module):
+    """
+    Implementation of a small convolutional neural network consisting of two
+    convolutional and one fully connected layer. It is described in this blog
+    post:
+        https://towardsdatascience.com/musical-genre-classification-with-convolutional-neural-networks-ff04f9601a74
+    """
+    def __init__(self, input_dim, channels=(16, 32, 64), num_classes=8,
+                 dropout_prob=0.5):
+        """
+        @param input_dim: The dimension of the input image in the form
+        (time_dim, mel_dim)
+        @param channels: The channel dimensions of the three layers
+        @param num_classes: The number of output classes
+        @param dropout_prob: The dropout probability of the last hidden layer
+        """
+
+        super(CNN_2, self).__init__()
+        self.num_classes = num_classes
+        pool_filter_size = (3,2)
+        self.layer1 = nn.Conv2d(1, channels[0], 3)
+        out_size = [i-2 for i in input_dim[1:]]
+        self.max_pool1 = nn.MaxPool2d(pool_filter_size)
+        out_size = [(int)(i/p) for i,p in zip(out_size, pool_filter_size)]
+        self.layer2 = nn.Conv2d(channels[0], channels[1], 3)
+        out_size = [i-2 for i in out_size]
+        self.max_pool2 = nn.MaxPool2d(pool_filter_size)
+        out_size = [(int)(i/p) for i,p in zip(out_size, pool_filter_size)]
+        self.fc_layer1 = nn.Linear(channels[1]*out_size[0]*out_size[1], channels[2], bias=True)
+        self.dropout = nn.Dropout(p=dropout_prob)
+
+        self.out_layer = nn.Linear(channels[2], num_classes,  bias=True)
+
+    def forward(self, X):
+        """
+        @param X: The data that should be passed through the network
+        ------
+        @return: The output of the network
+        """
+        # Conv layers
+        out = F.relu(self.layer1(X))
+        out = self.max_pool1(out)
+        out = F.relu(self.layer2(out))
+        out = self.max_pool2(out)
+
+        # FC layer
+        out = out.tensor.view(X.shape[0], -1)
+        out = F.relu(self.fc_layer1(out))
+        out = self.dropout(out)
+        out = self.out_layer(out)
+
+        return out
+
+    def save(self, path):
+        """
+        Save model with its parameters to the given path. Conventionally the
+        path should end with "*.model".
+
+        Parameters
+        ----------
+        path: str
+            The path where the model should be saved.
+        """
+
+        print('Saving model... {}'.format(path))
+        torch.save(self,path)
