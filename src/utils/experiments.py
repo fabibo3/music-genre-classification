@@ -33,7 +33,8 @@ def run_experiment(config_file: str):
 
     # Distinguish between test, train and parameter-search
     if(config["mode"]=="train"):
-        raise NotImplementedError
+        # Train is equal to parameter search without parameter ranges
+        search_parameters(config)
     elif(config["mode"]=="parameter-search"):
         search_parameters(config)
     else:
@@ -71,15 +72,13 @@ def search_parameters(config: str):
     if(dataset_type=="melspectro"):
         dataset = MelSpectroDataset("melspectro_songs_train_new.pickle",
                                     label_file="melspectro_genres_train_new.pickle")
-        _, data, labels = dataset.get_whole_dataset()
-        assert(len(data)==len(labels))
-        n_train = int(train_split/100.0 * len(labels))
-        n_val = int(val_split/100.0 * len(labels))
+        n_train = int(train_split/100.0 * len(dataset))
+        n_val = int(val_split/100.0 * len(dataset))
         # Shuffle
         if(dataset_shuffle):
-            permute = np.random.permutation(len(data))
-            data = data[permute]
-            labels = labels[permute]
+            data_indices = np.random.permutation(len(dataset))
+        else:
+            data_indices = np.arange(len(dataset))
     else:
         n_train = int(train_split/100.0 * len(all_files))
         n_val = int(val_split/100.0 * len(all_files))
@@ -93,11 +92,16 @@ def search_parameters(config: str):
     for i in range(n_runs):
         if(dataset_type == "melspectro"):
             # Split into train/validation
-            train_dataset = (data[:n_train], labels[:n_train])
-            print(f"Using {len(train_dataset[0])} training files")
+            train_dataset = MelSpectroDataset("melspectro_songs_train_new.pickle",
+                                label_file="melspectro_genres_train_new.pickle")
+            train_dataset.set_subset(data_indices[:n_train])
+
+            print(f"Using {len(train_dataset)} training files")
             if(val_split > 0):
-                val_dataset = (data[-n_val:], labels[-n_val:])
-                print(f"Using {len(val_dataset[0])} validation files")
+                val_dataset = MelSpectroDataset("melspectro_songs_train_new.pickle",
+                                    label_file="melspectro_genres_train_new.pickle")
+                val_dataset.set_subset(data_indices[-n_val:])
+                print(f"Using {len(val_dataset)} validation files")
         else:
             train_dataset = MusicDataset(split="train",
                                          mfcc_file="mfccs.csv",
@@ -144,8 +148,9 @@ def search_parameters(config: str):
 
         results.append(cur_results)
 
-        # Rotate files
+        # Rotate files/data samples to get different splits
         all_files = all_files[-n_val:] + all_files[:n_train]
+        data_indices = data_indices[-n_val:] + data_indices[:n_train]
 
 
     # Get the best configuration

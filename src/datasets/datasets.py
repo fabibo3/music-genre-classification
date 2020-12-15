@@ -14,7 +14,7 @@ import pandas as pd
 import torch.utils.data
 import pickle
 
-class MusicDataset(object):
+class MusicDataset(torch.utils.data.Dataset):
     """
     Class containing the music data given as .mp3 files
     """
@@ -90,7 +90,8 @@ class MusicDataset(object):
         file_no = self._valid_files[index]
         return file_no,\
                 self._features[index],\
-                self._labels[file_no]
+                self._labels[file_no]-1
+
 
     def get_whole_dataset(self) -> (list, np.ndarray, dict):
         valid_labels = [self._labels[f] for f in self._valid_files]
@@ -189,7 +190,7 @@ class MusicDataset(object):
         return data.values, valid_files
 
 
-class MelSpectroDataset(torch.utils.data.DataLoader):
+class MelSpectroDataset(torch.utils.data.Dataset):
     """
     Class representing a set of melspectrograms provided as .pickle file
     """
@@ -223,27 +224,26 @@ class MelSpectroDataset(torch.utils.data.DataLoader):
         self._data_file_name = os.path.join(self._root_dir_name,
                                             melspectro_file)
 
+        # Load melspectros
+        self.data = pickle.load(open(self._data_file_name, "rb"))
+        self.data = np.expand_dims(self.data, axis=1) # torch dimensions
+        self.datashape = self.data.shape
         # Load labels if possible
         if(self.contains_labels):
             self.labels = pickle.load( open(self._label_file, "rb" ))
+            self.labels = np.argmax(self.labels, axis=1) # One-hot to integer
+            assert(self.labels.shape[0] == self.data.shape[0])
         else:
             self.labels = None
         # Load filenames if possible
         if(self.contains_file_names):
             self.file_names = pickle.load(open(self._file_names_file, "rb"))
+            assert(self.file_names.shape[0] == self.data.shape[0])
         else:
             self.file_names = None
-        # Load melspectros
-        self.data = pickle.load(open(self._data_file_name, "rb"))
-        self.data = np.expand_dims(self.data, axis=1) # torch dimensions
-
-        if(self.contains_file_names):
-            assert(self.file_names.shape[0] == self.data.shape[0])
-        if(self.contains_labels):
-            assert(self.labels.shape[0] == self.data.shape[0])
 
     def __len__(self):
-        return len(self.data[0])
+        return self.data.shape[0]
 
     def __getitem__(self, key):
         if isinstance(key, slice):
@@ -269,12 +269,22 @@ class MelSpectroDataset(torch.utils.data.DataLoader):
         if(self.contains_file_names):
             fn = self.file_names[index]
         else:
-            fn = None
+            fn = -1
         if(self.contains_labels):
             label = self.labels[index]
         else:
-            label = None
+            label = -1
         return fn, self.data[index], label
+
+    def set_subset(self, indices: list):
+        """
+        Set the dataset to a subset of samples
+        """
+        self.data = self.data[indices]
+        if(self.contains_file_names):
+            self.file_names = self.file_names[indices]
+        if(self.contains_labels):
+            label = self.labels[indices]
 
     def get_whole_dataset(self) -> (np.ndarray, np.ndarray,
                                     np.ndarray):

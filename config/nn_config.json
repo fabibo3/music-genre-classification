@@ -13,7 +13,8 @@
         "weight_decay": 0.1,
         "lr_decay_every": 100,
         "decay_rate": 0.1,
-        "log_nth": 10
+        "log_nth": 10,
+        "batch_size": 100
     },
     "mode": "parameter-search",
     "dataset": {

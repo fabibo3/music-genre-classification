@@ -18,45 +18,31 @@ from typing import Union
 _n_epochs_key = "epochs"
 _learning_rate_key = "learning_rate"
 
-def run_nn_model(config: dict,
-           test_dataset: MusicDataset,
-              experiment_name: str,
-              train_dataset: MusicDataset=None) -> dict:
+def run_nn_model(model_path,
+                 test_dataset: MusicDataset,
+                 experiment_name: str,
+                 train_dataset: MusicDataset=None) -> dict:
     """
     Fit a neural network model on the training set and run it on the test set
     afterwards
-    @param train_dataset: The training data as MusicDataset
-    @param test_dataset: The test data as MusicDataset
-    @param config: A configuration defining the algorithm parameters. Use this
-    if the model still needs to be trained
     @param model_path: The path where a trained model can be found
+    @param test_dataset: The test data as MusicDataset
+    @param experiment_name: The folder name of the current experiment
+    @param train_dataset: The training data as MusicDataset
     ------
     @return predictions for the test data
     """
-    train_split = config.get('train_split', 80)/100.
-    model_path = config.get('model_path', None)
-
     # Test dataset
-    test_files, X_test, _ = test_dataset.get_whole_dataset_labels_zero_based()
+    if(type(test_dataset)==MusicDataset):
+        test_files, X_test, _ = test_dataset.get_whole_dataset_labels_zero_based()
+    else:
+        test_files, X_test, _ = test_dataset.get_whole_dataset()
+
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     X_test = torch.tensor(X_test).float().to(device)
 
-    if(model_path!=None):
-        # Apply model
-        model = torch.load(model_path)
-    else:
-        # Train model and apply afterwards
-        assert(train_dataset != None)
-        _, X_train, y_train = train_dataset.get_whole_dataset_labels_zero_based()
-        if(config.get('early_stop', False)):
-            X_train, y_train, X_val, y_val = train_test_split(X_train, y_train,
-                                                              train_size=train_split)
-        else:
-            X_val = None
-            y_val = None
-        model = SmallNet3(X_train.shape[1])
-        model = train_model(model, config, X_train, y_train, X_val, y_val,
-                            experiment_name)
+    # Apply model
+    model = torch.load(model_path)
 
     # Predict
     result = model(X_test)
@@ -69,8 +55,8 @@ def run_nn_model(config: dict,
 
 def search_nn_parameters(config: dict,
                          experiment_name: str,
-                         train_dataset: Union[MusicDataset,tuple],
-                         val_dataset: Union[MusicDataset,tuple]=None):
+                         train_dataset: torch.utils.data.dataset,
+                         val_dataset: torch.utils.data.dataset=None):
     """
     Fit a neural network model using train and validation set
     @param config: A dict containing training parameters and parameter ranges
@@ -107,16 +93,12 @@ def search_nn_parameters(config: dict,
     parameter_sets = []
     results = []
 
-    # Get data
-    if(type(train_dataset)==MusicDataset):
-        _, X_train, y_train = train_dataset.get_whole_dataset_labels_zero_based()
-    else:
-        X_train, y_train = train_dataset
+    # Get validation data
     if(val_dataset != None):
         if(type(val_dataset)==MusicDataset):
             _, X_val, y_val = val_dataset.get_whole_dataset_labels_zero_based()
         else:
-            X_val, y_val = val_dataset
+            _, X_val, y_val = val_dataset.get_whole_dataset()
 
     # GPU
     if(torch.cuda.is_available()):
@@ -133,19 +115,19 @@ def search_nn_parameters(config: dict,
     for i_lr, lr in enumerate(learning_rates):
         params['learning_rate'] = lr
         if(model_architecture=='CNN_2'):
-            model = CNN_2((1, X_train.shape[2], X_train.shape[3]),
+            model = CNN_2(train_dataset.datashape[1:],
                           dropout_prob=config.get("dropout_prob", 0.5))
         else:
             # SmallNet5 by default
-            model = SmallNet5(X_train.shape[1])
+            model = SmallNet5(len(train_dataset[0]))
+
+        # Train model
         trained_model, \
                 best_epoch,\
                 best_res_out = train_model(model,
                                 params,
-                                X_train,
-                                y_train,
-                                X_val,
-                                y_val,
+                                train_dataset,
+                                val_dataset,
                                 experiment_name)
         params['best_epoch'] = best_epoch
 
@@ -159,24 +141,19 @@ def search_nn_parameters(config: dict,
 
     return parameter_names, parameter_sets, results
 
-def train_model(model,
-                config,
-                X_train,
-                label_train,
-                X_val,
-                label_val,
-                experiment_name):
+def train_model(model: torch.nn.Module,
+                config: dict,
+                train_data: torch.utils.data.dataset,
+                val_data: torch.utils.data.dataset,
+                experiment_name: str):
     """
     Training procedure.
     ----------
     @param model: torch.nn.Module, Model object initialized from a torch.nn.Module
     @param config: dict, Training parameters
-    @param X_train: numpy.array, Training data
-    @param label_train: array-like, Training labels
-    @param X_val: numpy.array, Validation data
-    @param label_val: array-like, Validation labels
+    @param train_data: The training dataset
+    @param val_data: The validation dataset
     @param experiment_name: str, The id of the current experiment
-    @param verbose: bool, print logs
     ------
     @return
     -------
@@ -204,6 +181,8 @@ def train_model(model,
     lr_decay_every = config.get('lr_decay_every', 100)
     decay_rate = config.get('decay_rate', 0.1)
     log_nth = config.get('log_nth', 1)
+    batch_size = config.get('batch_size', len(train_data))
+    n_iter_per_epoch = np.ceil(len(train_data)/batch_size).astype(int)
 
     # Optimizer
     default_adam_args = {"lr": 1e-4,
@@ -218,18 +197,19 @@ def train_model(model,
     model.to(device)
     model.float()
 
-    try:
+    if(val_data is not None):
+        _ , X_val, label_val = val_data.get_whole_dataset()
         _ = X_val.shape
         validate = True
         X_val = torch.tensor(X_val).float().to(device)
         label_val = torch.tensor(label_val).long()
-        print(f'Using {X_val.shape[0]} validation samples')
-    except (NameError, AttributeError) as e:
-        print("No validation set used")
+        print(f'Using {X_val.shape[0]} validation samples in training procedure')
+    else:
+        print("No validation set used in training procedure")
         validate = False
 
-    X_train = torch.tensor(X_train)
-    label_train = torch.tensor(label_train)
+    train_loader = torch.utils.data.DataLoader(train_data,
+                                               batch_size=batch_size)
 
     if(loss_function=='CrossEntropy'):
         loss_function = nn.CrossEntropyLoss()
@@ -238,28 +218,31 @@ def train_model(model,
 
     print('#'*50)
     print('START TRAIN ON {}.'.format(device))
-    print(f'Using {X_train.shape[0]} training samples')
+    print(f'Using {len(train_data)} training samples')
 
     # Iterate through epochs
     for epoch in range(1, epochs + 1):
-        model.train()
-        X_train, label_train = X_train.float(), label_train.long()
+        for iteration, (_, X_train, label_train) in enumerate(train_loader):
+            model.train()
+            X_train = torch.tensor(X_train)
+            label_train = torch.tensor(label_train)
+            X_train, label_train = X_train.float(), label_train.long()
 
-        X_train, label_train = X_train.to(device), label_train.to(device)
-        optim.zero_grad()
-        # Forward pass
-        output = model(X_train)
-        # Loss
-        loss = loss_function(output, label_train)
-        # Backprop
-        loss.backward()
-        optim.step()
+            X_train, label_train = X_train.to(device), label_train.to(device)
+            optim.zero_grad()
+            # Forward pass
+            output = model(X_train)
+            # Loss
+            loss = loss_function(output, label_train)
+            # Backprop
+            loss.backward()
+            optim.step()
 
-        train_loss_history.append(loss.detach().item())
+            train_loss_history.append(loss.detach().item())
 
-        if epoch % log_nth == 0:
-            print('[Epoch {} / {}] TRAIN LOSS: {:.3f}'.format(
-                epoch, epochs, loss))
+            if iteration % log_nth == 0:
+                print('[Iteration {} / {}] TRAIN LOSS: {:.3f}'.format(
+                    iteration, n_iter_per_epoch, loss))
 
         if(epoch == 1 or best_train_loss > loss):
             best_train_loss = loss
@@ -330,7 +313,9 @@ def train_model(model,
     ax2 = ax1.twinx()
     color = 'tab:red'
     ax2.set_ylabel("acc", color=color)
-    ax2.plot(val_measure_history, color=color)
+    ax2.plot(np.arange(n_iter_per_epoch, epochs*n_iter_per_epoch+1,
+                       n_iter_per_epoch),
+             val_measure_history, color=color)
     fig.tight_layout()
     plt.savefig(os.path.join(get_experiment_folder(experiment_name),
                              "loss_plot.png"))
@@ -480,7 +465,7 @@ class CNN_2(nn.Module):
         out = self.max_pool2(out)
 
         # FC layer
-        out = out.tensor.view(X.shape[0], -1)
+        out = out.view(X.shape[0], -1)
         out = F.relu(self.fc_layer1(out))
         out = self.dropout(out)
         out = self.out_layer(out)
