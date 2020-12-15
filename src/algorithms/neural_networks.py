@@ -254,9 +254,8 @@ def train_model(model: torch.nn.Module,
             if(eval_metric == 'Accuracy'):
                 pred = np.argmax(pred.detach().cpu().numpy(), axis=1)
                 val_mes = accuracy(pred, label_val.numpy())
-            if epoch % log_nth == 0:
-                print('[Epoch {} / {}] VAL acc: {:.3f}'.format(
-                            epoch, epochs, val_mes))
+            print('[Epoch {} / {}] VAL acc: {:.3f}'.format(
+                        epoch, epochs, val_mes))
 
             # Evaluate on validation set
             val_measure_history.append(val_mes)
