@@ -89,6 +89,8 @@ def search_parameters(config: str):
         else:
             data_indices = np.arange(len(all_files))
 
+    data_indices = data_indices.tolist()
+
     print("#"*50)
     print("Searching for best parameters...")
 
