@@ -284,7 +284,7 @@ class MelSpectroDataset(torch.utils.data.Dataset):
         if(self.contains_file_names):
             self.file_names = self.file_names[indices]
         if(self.contains_labels):
-            label = self.labels[indices]
+            self.labels = self.labels[indices]
 
     def get_whole_dataset(self) -> (np.ndarray, np.ndarray,
                                     np.ndarray):

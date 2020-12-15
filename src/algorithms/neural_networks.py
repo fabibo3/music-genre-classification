@@ -199,7 +199,6 @@ def train_model(model: torch.nn.Module,
 
     if(val_data is not None):
         _ , X_val, label_val = val_data.get_whole_dataset()
-        _ = X_val.shape
         validate = True
         X_val = torch.tensor(X_val).float().to(device)
         label_val = torch.tensor(label_val).long()
@@ -224,8 +223,6 @@ def train_model(model: torch.nn.Module,
     for epoch in range(1, epochs + 1):
         for iteration, (_, X_train, label_train) in enumerate(train_loader):
             model.train()
-            X_train = torch.tensor(X_train)
-            label_train = torch.tensor(label_train)
             X_train, label_train = X_train.float(), label_train.long()
 
             X_train, label_train = X_train.to(device), label_train.to(device)
@@ -281,7 +278,7 @@ def train_model(model: torch.nn.Module,
 
     # Reload best model
     print(f"Best model in epoch {best_epoch}.\n")
-    if(not early_stop):
+    if(early_stop):
         print(f"Reload model from epoch {best_epoch}")
         model.load_state_dict(best_state)
     # Store in eval mode to avoid problems
