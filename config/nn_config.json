@@ -5,7 +5,7 @@
         "type": "neural-network",
         "architecture": "CNN_2",
         "dropout_prob": 0.5,
-        "epochs": 10,
+        "epochs": 100,
         "learning_rate": 0.25,
         "loss_function": "CrossEntropy",
         "early_stop": true,
@@ -14,7 +14,7 @@
         "lr_decay_every": 100,
         "decay_rate": 0.1,
         "log_nth": 10,
-        "batch_size": 10
+        "batch_size": 100
     },
     "mode": "parameter-search",
     "dataset": {

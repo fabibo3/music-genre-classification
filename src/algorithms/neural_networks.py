@@ -307,7 +307,7 @@ def train_model(model: torch.nn.Module,
     fig, ax1 = plt.subplots()
     color = 'tab:blue'
     ax1.plot(train_loss_history, color=color)
-    ax1.set_xlabel("Epoch")
+    ax1.set_xlabel("Iteration")
     ax1.set_ylabel("Loss", color=color)
     ax2 = ax1.twinx()
     color = 'tab:red'
