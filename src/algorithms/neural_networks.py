@@ -14,6 +14,7 @@ from utils.utils import accuracy
 from utils.folders import get_experiment_folder
 from sklearn.model_selection import train_test_split
 from typing import Union
+from tqdm import tqdm
 
 _n_epochs_key = "epochs"
 _learning_rate_key = "learning_rate"
@@ -44,14 +45,14 @@ def run_nn_model(model_path,
     # Predict
     print('Predicting classes...')
     res_all = []
-    for X in X_test:
+    for X in tqdm(X_test, position=0, leave=True):
         X = torch.tensor(X).unsqueeze(0).float().to(device)
         result = model(X)
         result = np.argmax(result.detach().cpu().numpy(), axis=1)
-        res_all.append(result)
+        res_all.append(result.item())
     predictions = {}
     for i, file_id in enumerate(test_files):
-        predictions[file_id] = result[i]+1 # Labels not zero_based in the nn model
+        predictions[file_id] = res_all[i]+1 # Labels not zero_based in the nn model
 
     return predictions
 

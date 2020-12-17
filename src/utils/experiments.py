@@ -265,7 +265,8 @@ def run_algorithm(algo_config: str, dataset: MusicDataset, experiment_name):
         raise ValueError("Algorithm not known!")
 
     # Predict random class for non-valid test data
-    all_ids = dataset.get_all_files()
+    entire_dataset = MusicDataset(split="test")
+    all_ids = entire_dataset.get_all_files()
     for i in all_ids:
         if(i not in predictions):
             print(f"[Warning]: No predicted value for {i}")
