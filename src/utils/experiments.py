@@ -88,7 +88,10 @@ def search_parameters(config: str):
         data_path = os.path.join(get_preprocessed_data_path("train"),
                                   "vgg_train.pickle")
         label_path = os.path.join(get_dataset_base_folder(), "train_clean.csv")
-        dataset = MelSpectroDataset(data_path, label_file=label_path)
+        file_names_path = os.path.join(get_preprocessed_data_path("train"),
+                                       "vgg_train_ids.pickle")
+        dataset = MelSpectroDataset(data_path, label_file=label_path,
+                                    file_names_file=file_names_path)
         n_train = int(train_split/100.0 * len(dataset))
         n_val = int(val_split/100.0 * len(dataset))
         # Shuffle

@@ -227,13 +227,7 @@ class MelSpectroDataset(torch.utils.data.Dataset):
         self.data = pickle.load(open(self._data_file_name, "rb"))
         self.data = np.expand_dims(self.data, axis=1) # torch dimensions
         self.datashape = self.data.shape
-        # Load labels if possible
-        if(self.contains_labels):
-            self.labels = pickle.load( open(self._label_file, "rb" ))
-            self.labels = np.argmax(self.labels, axis=1) # One-hot to integer
-            assert(self.labels.shape[0] == self.data.shape[0])
-        else:
-            self.labels = None
+
         # Load filenames if possible
         if(self.contains_file_names):
             self.file_names = pickle.load(open(self._file_names_file, "rb"))
@@ -241,6 +235,25 @@ class MelSpectroDataset(torch.utils.data.Dataset):
             assert(len(self.file_names) == self.data.shape[0])
         else:
             self.file_names = None
+
+        # Load labels if possible
+        if(self.contains_labels):
+            if(self._label_file.split(".")[-1]==".pickle"):
+                self.labels = pickle.load( open(self._label_file, "rb" ))
+                self.labels = np.argmax(self.labels, axis=1) # One-hot to integer
+            elif(self._label_file.split(".")[-1]==".csv"):
+                if(self.contains_file_names):
+                    self.labels = self.load_labels_csv(self.file_names,
+                                               self._label_file)
+                else:
+                    raise ValueError("If .csv label file is used, filenames\
+                                     must be specified!")
+            else:
+                print("Label file must either be .csv or .pickle")
+
+            assert(self.labels.shape[0] == self.data.shape[0])
+        else:
+            self.labels = None
 
     def __len__(self):
         return self.data.shape[0]
@@ -290,3 +303,19 @@ class MelSpectroDataset(torch.utils.data.Dataset):
                                     np.ndarray):
         return self.file_names, self.data, self.labels
 
+    def load_labels_csv(self, file_names, labels_file) -> np.array:
+        """
+        Load the labels corresponding to file_names from .csv file
+        """
+        label_dict = {}
+        with open(genres_file, 'r') as f:
+            reader = csv.reader(f, delimiter=",")
+            # Ignore first row
+            next(reader)
+            for row in reader:
+                label_dict[row[0]+".mp3"] = int(row[1])
+
+        labels = [label_dict[fn] for fn in file_names]
+        labels = np.asarray(labels)
+
+        return labels

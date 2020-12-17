@@ -1,5 +1,5 @@
 {
-    "experiment_name": "cnn1",
+    "experiment_name": "cnn-vgg-1",
     "algorithm": "neural-network",
     "neural-network": {
         "type": "neural-network",
@@ -14,13 +14,13 @@
         "lr_decay_every": 100,
         "decay_rate": 0.1,
         "log_nth": 10,
-        "batch_size": 100
+        "batch_size": 10
     },
     "mode": "parameter-search",
     "dataset": {
         "train_split": 80,
         "val_split": 20,
-        "features": "melspectro",
+        "features": "vgg_features",
         "shuffle": true
     },
     "parameter-search": {
