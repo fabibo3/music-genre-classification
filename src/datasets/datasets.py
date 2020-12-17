@@ -225,8 +225,6 @@ class MelSpectroDataset(torch.utils.data.Dataset):
 
         # Load melspectros
         self.data = pickle.load(open(self._data_file_name, "rb"))
-        self.data = np.expand_dims(self.data, axis=1) # torch dimensions
-        self.datashape = self.data.shape
 
         # Load filenames if possible
         if(self.contains_file_names):
@@ -255,6 +253,27 @@ class MelSpectroDataset(torch.utils.data.Dataset):
             assert(self.labels.shape[0] == self.data.shape[0])
         else:
             self.labels = None
+
+        # Delete invalid samples
+        shape = self.data[0].shape # Assumes that first element has correct shape!
+        invalid = []
+        for i,d in enumerate(self.data):
+            if(d.shape != shape):
+                invalid.append(i)
+        if(len(invalid) > 0):
+            self.data = np.delete(self.data, invalid, 0)
+            self.data = np.stack(self.data)
+            if(self.contains_file_names):
+                print("Invalid: ", self.file_names[invalid])
+                self.file_names = np.delete(self.file_names, invalid, 0)
+                assert(self.file_names.shape[0]==self.data.shape[0])
+            if(self.contains_labels):
+                self.labels = np.delete(self.labels, invalid, 0)
+                assert(self.labels.shape[0]==self.data.shape[0])
+
+        self.data = np.expand_dims(self.data, axis=1) # torch dimensions
+        self.datashape = self.data.shape
+        print("Dataset is of shape ", self.datashape)
 
     def __len__(self):
         return self.data.shape[0]
