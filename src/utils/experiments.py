@@ -126,7 +126,8 @@ def search_parameters(config: str):
 
             print(f"Using {len(train_dataset)} training files")
             if(val_split > 0):
-                val_dataset = MelSpectroDataset(data_path, label_file=label_path)
+                val_dataset = MelSpectroDataset(data_path, label_file=label_path,
+                                    file_names_file=file_names_path)
                 val_dataset.set_subset(data_indices[-n_val:])
                 print(f"Using {len(val_dataset)} validation files")
         else:
