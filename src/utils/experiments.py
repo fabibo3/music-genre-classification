@@ -87,7 +87,7 @@ def search_parameters(config: str):
     elif(dataset_type=="vgg_features"):
         data_path = os.path.join(get_preprocessed_data_path("train"),
                                   "vgg_train.pickle")
-        label_path = os.path.join(get_dataset_base_folder(), "train_clean.csv")
+        label_path = os.path.join(get_dataset_base_folder(), "train.csv")
         file_names_path = os.path.join(get_preprocessed_data_path("train"),
                                        "valid_ids_sorted.pickle")
         dataset = MelSpectroDataset(data_path, label_file=label_path,
@@ -119,7 +119,7 @@ def search_parameters(config: str):
             # Split into train/validation
             if(dataset_type == "melspectro"):
                 train_dataset = MelSpectroDataset(data_path, label_file=label_path)
-            if(dataset_type == "vff_features"):
+            if(dataset_type == "vgg_features"):
                 train_dataset = MelSpectroDataset(data_path, label_file=label_path,
                                     file_names_file=file_names_path)
             train_dataset.set_subset(data_indices[:n_train])
