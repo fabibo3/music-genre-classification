@@ -1,5 +1,5 @@
 {
-    "experiment_name": "cnn-melspectro-1",
+    "experiment_name": "cnn-vgg-1",
     "algorithm": "neural-network",
     "neural-network": {
         "type": "neural-network",
@@ -11,7 +11,7 @@
         "early_stop": true,
         "eval_metric": "Accuracy",
         "weight_decay": 0.01,
-        "lr_decay_every": 100,
+        "lr_decay_every": 80,
         "decay_rate": 0.1,
         "log_nth": 100,
         "batch_size": 100
@@ -20,7 +20,7 @@
     "dataset": {
         "train_split": 80,
         "val_split": 20,
-        "features": "melspectro",
+        "features": "vgg_features",
         "shuffle": true
     },
     "parameter-search": {

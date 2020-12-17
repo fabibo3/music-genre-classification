@@ -308,7 +308,7 @@ class MelSpectroDataset(torch.utils.data.Dataset):
         Load the labels corresponding to file_names from .csv file
         """
         label_dict = {}
-        with open(genres_file, 'r') as f:
+        with open(labels_file, 'r') as f:
             reader = csv.reader(f, delimiter=",")
             # Ignore first row
             next(reader)
