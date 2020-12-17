@@ -117,7 +117,11 @@ def search_parameters(config: str):
     for i in range(n_runs):
         if(dataset_type == "melspectro" or dataset_type == "vgg_features"):
             # Split into train/validation
-            train_dataset = MelSpectroDataset(data_path, label_file=label_path)
+            if(dataset_type == "melspectro"):
+                train_dataset = MelSpectroDataset(data_path, label_file=label_path)
+            if(dataset_type == "vff_features"):
+                train_dataset = MelSpectroDataset(data_path, label_file=label_path,
+                                    file_names_file=file_names_path)
             train_dataset.set_subset(data_indices[:n_train])
 
             print(f"Using {len(train_dataset)} training files")

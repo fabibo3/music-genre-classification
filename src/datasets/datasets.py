@@ -238,10 +238,10 @@ class MelSpectroDataset(torch.utils.data.Dataset):
 
         # Load labels if possible
         if(self.contains_labels):
-            if(self._label_file.split(".")[-1]==".pickle"):
+            if(self._label_file.split(".")[-1]=="pickle"):
                 self.labels = pickle.load( open(self._label_file, "rb" ))
                 self.labels = np.argmax(self.labels, axis=1) # One-hot to integer
-            elif(self._label_file.split(".")[-1]==".csv"):
+            elif(self._label_file.split(".")[-1]=="csv"):
                 if(self.contains_file_names):
                     self.labels = self.load_labels_csv(self.file_names,
                                                self._label_file)
