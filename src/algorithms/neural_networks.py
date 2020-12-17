@@ -122,7 +122,8 @@ def search_nn_parameters(config: dict,
                           dropout_prob=config.get("dropout_prob", 0.5))
         else:
             # SmallNet5 by default
-            model = SmallNet5(len(train_dataset[0]))
+            model = SmallNet5(len(train_dataset[0].view(-1)),
+                              dropout_prob=config.get("dropout_prob", 0.5))
 
         # Train model
         trained_model, \
@@ -227,6 +228,10 @@ def train_model(model: torch.nn.Module,
         for iteration, (_, X_train, label_train) in enumerate(train_loader):
             model.train()
             X_train, label_train = X_train.float(), label_train.long()
+            if(type(model)==SmallNet5 or type(model)==SmallNet3):
+                # Reshape to vector if necessary
+                if(X_train.dim()==4):
+                    X_train = X_train.view(X_train.shape[0], -1)
 
             X_train, label_train = X_train.to(device), label_train.to(device)
             optim.zero_grad()
@@ -373,7 +378,8 @@ class SmallNet5(nn.Module):
     Implementation of a small neural network consisting of 5 fully connected
     hidden layers and ReLU nonlinearities
     """
-    def __init__(self, input_dim, channels=(2048, 1024, 512, 256, 128), num_classes=8):
+    def __init__(self, input_dim, channels=(2048, 1024, 512, 256, 128),
+                 num_classes=8, dropout_prob=0.5):
         """
         @param input_dim: The dimension of the input vectors
         @param channels: The channel dimensions of the five layers
@@ -387,6 +393,7 @@ class SmallNet5(nn.Module):
         self.layer3 = nn.Linear(channels[1], channels[2], bias=True)
         self.layer4 = nn.Linear(channels[2], channels[3], bias=True)
         self.layer5 = nn.Linear(channels[3], channels[4], bias=True)
+        self.dropout = nn.Dropout(p=dropout_prob)
         self.layer6 = nn.Linear(channels[4], num_classes, bias=False)
 
     def forward(self, X):
@@ -400,6 +407,7 @@ class SmallNet5(nn.Module):
         out = F.relu(self.layer3(out))
         out = F.relu(self.layer4(out))
         out = F.relu(self.layer5(out))
+        out = self.dropout(out)
         out = self.layer6(out)
 
         return out

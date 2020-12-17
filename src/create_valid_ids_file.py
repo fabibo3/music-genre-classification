@@ -19,7 +19,7 @@ for f in tqdm(files, position=0, leave=True):
         x, sr = librosa.load(fn_full)
         valid_ids.append(int(f.split(".")[0]))
     except:
-        not_valid.add(f)
+        not_valid.append(f)
 
 print('Files not valid: ', not_valid)
 valid_ids = np.asarray(valid_ids)
