@@ -333,7 +333,7 @@ class MelSpectroDataset(torch.utils.data.Dataset):
             # Ignore first row
             next(reader)
             for row in reader:
-                label_dict[row[0]+".mp3"] = int(row[1])
+                label_dict[row[0]+".mp3"] = int(row[1])-1 #Zero-based labels
 
         labels = [label_dict[fn] for fn in file_names]
         labels = np.asarray(labels)

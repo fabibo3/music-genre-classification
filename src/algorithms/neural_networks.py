@@ -221,7 +221,6 @@ def train_model(model: torch.nn.Module,
 
     print('#'*50)
     print('START TRAIN ON {}.'.format(device))
-    print(f'Using {len(train_data)} training samples')
 
     # Iterate through epochs
     for epoch in range(1, epochs + 1):
@@ -229,7 +228,7 @@ def train_model(model: torch.nn.Module,
             model.train()
             X_train, label_train = X_train.float(), label_train.long()
             if(type(model)==SmallNet5 or type(model)==SmallNet3):
-                # Reshape to vector if necessary
+                # Reshape to vector if required by model
                 if(X_train.dim()==4):
                     X_train = X_train.view(X_train.shape[0], -1)
 
