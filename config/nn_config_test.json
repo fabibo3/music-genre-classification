@@ -1,18 +1,12 @@
 {
-    "experiment_name": "nn-test",
+    "experiment_name": "nn-test-5-layer-lr0.25-2",
     "algorithm": "neural-network",
     "neural-network": {
         "type": "neural-network",
-        "model_path": "/home/fabi/workspace_python/music-genre-classification/experiments/nn-validated-lr/best.model"
+        "model_path": "/home/fabi/workspace_python/music-genre-classification/experiments/nn-5-layer-lr0.25/best.model"
     },
     "mode": "test",
     "dataset": {
-        "train_split": 80,
-        "val_split": 20,
-        "features": "adapte"
-    },
-    "parameter-search": {
-        "exterior_cross_validation": true,
-        "internal_cross_validation": false
+        "features": "melspectro"
     }
 }

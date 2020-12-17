@@ -194,11 +194,11 @@ class MelSpectroDataset(torch.utils.data.Dataset):
     """
     Class representing a set of melspectrograms provided as .pickle file
     """
-    def __init__(self, melspectro_file: str,
+    def __init__(self, data_file: str,
                  file_names_file: str=None,
                  label_file: str=None):
         """
-        @param melspectro_file: The file containing melspectrograms for a set
+        @param data_file: The file containing melspectrograms for a set
         of music files. The file should be placed in the data directory root
         folder.
         @param file_names_file: A file containing the names of the files
@@ -210,19 +210,18 @@ class MelSpectroDataset(torch.utils.data.Dataset):
         """
         self._root_dir_name = get_dataset_base_folder()
         if(file_names_file is not None):
-            self._file_names_file = os.path.join(self._root_dir_name, file_names_file)
+            self._file_names_file = file_names_file
             self.contains_file_names = True
         else:
             self._file_names_file = None
             self.contains_file_names = False
         if(label_file is not None):
-            self._label_file = os.path.join(self._root_dir_name, label_file)
+            self._label_file = label_file
             self.contains_labels = True
         else:
             self._label_file = None
             self.contains_labels = False
-        self._data_file_name = os.path.join(self._root_dir_name,
-                                            melspectro_file)
+        self._data_file_name = data_file
 
         # Load melspectros
         self.data = pickle.load(open(self._data_file_name, "rb"))

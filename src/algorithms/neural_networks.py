@@ -19,16 +19,14 @@ _n_epochs_key = "epochs"
 _learning_rate_key = "learning_rate"
 
 def run_nn_model(model_path,
-                 test_dataset: MusicDataset,
-                 experiment_name: str,
-                 train_dataset: MusicDataset=None) -> dict:
+                 test_dataset: torch.utils.data.Dataset,
+                 experiment_name: str) -> dict:
     """
-    Fit a neural network model on the training set and run it on the test set
-    afterwards
+    Apply a neural network model to a test dataset
+    ------
     @param model_path: The path where a trained model can be found
-    @param test_dataset: The test data as MusicDataset
+    @param test_dataset: The test data
     @param experiment_name: The folder name of the current experiment
-    @param train_dataset: The training data as MusicDataset
     ------
     @return predictions for the test data
     """
@@ -42,9 +40,10 @@ def run_nn_model(model_path,
     X_test = torch.tensor(X_test).float().to(device)
 
     # Apply model
-    model = torch.load(model_path)
+    model = torch.load(model_path, map_location=device)
 
     # Predict
+    print('Predicting classes...')
     result = model(X_test)
     result = np.argmax(result.detach().cpu().numpy(), axis=1)
     predictions = {}

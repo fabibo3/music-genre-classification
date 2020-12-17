@@ -10,7 +10,9 @@ from shutil import copyfile
 from utils.config import load_config_file
 from utils.folders import get_experiment_folder,\
                             get_config_file_path,\
-                            get_train_data_path
+                            get_train_data_path,\
+                            get_preprocessed_data_path,\
+                            get_dataset_base_folder
 from algorithms.kNN import run_kNN, search_kNN_parameters
 from algorithms.decisionTrees import search_CatBoost_parameters,\
 run_decisionTree
@@ -68,10 +70,25 @@ def search_parameters(config: str):
     parameter_sets = []
     results = []
  
-    # Read files if mp3s are used
+    # Prepare datasets
     if(dataset_type=="melspectro"):
-        dataset = MelSpectroDataset("melspectro_songs_train_new.pickle",
-                                    label_file="melspectro_genres_train_new.pickle")
+        data_path = os.path.join(get_dataset_base_folder(),
+                                  "melspectro_songs_train_new.pickle")
+        label_path = os.path.join(get_dataset_base_folder(),
+                     "melspectro_genres_train_new.pickle")
+        dataset = MelSpectroDataset(data_path, label_file=label_path)
+        n_train = int(train_split/100.0 * len(dataset))
+        n_val = int(val_split/100.0 * len(dataset))
+        # Shuffle
+        if(dataset_shuffle):
+            data_indices = np.random.permutation(len(dataset))
+        else:
+            data_indices = np.arange(len(dataset))
+    elif(dataset_type=="vgg_features"):
+        data_path = os.path.join(get_preprocessed_data_path("train"),
+                                  "vgg_train.pickle")
+        label_path = os.path.join(get_dataset_base_folder(), "train_clean.csv")
+        dataset = MelSpectroDataset(data_path, label_file=label_path)
         n_train = int(train_split/100.0 * len(dataset))
         n_val = int(val_split/100.0 * len(dataset))
         # Shuffle
@@ -95,19 +112,18 @@ def search_parameters(config: str):
     print("Searching for best parameters...")
 
     for i in range(n_runs):
-        if(dataset_type == "melspectro"):
+        if(dataset_type == "melspectro" or dataset_type == "vgg_features"):
             # Split into train/validation
-            train_dataset = MelSpectroDataset("melspectro_songs_train_new.pickle",
-                                label_file="melspectro_genres_train_new.pickle")
+            train_dataset = MelSpectroDataset(data_path, label_file=label_path)
             train_dataset.set_subset(data_indices[:n_train])
 
             print(f"Using {len(train_dataset)} training files")
             if(val_split > 0):
-                val_dataset = MelSpectroDataset("melspectro_songs_train_new.pickle",
-                                    label_file="melspectro_genres_train_new.pickle")
+                val_dataset = MelSpectroDataset(data_path, label_file=label_path)
                 val_dataset.set_subset(data_indices[-n_val:])
                 print(f"Using {len(val_dataset)} validation files")
         else:
+            # Split into train/validation
             train_dataset = MusicDataset(split="train",
                                          mfcc_file="mfccs.csv",
                                          files=all_files[data_indices[:n_train]])
@@ -191,8 +207,22 @@ def run_test(config: str):
     """
     Evaluate a certain model on the test set
     """
+    dataset_type = config['dataset']['features']
     # Define datasets
-    test_dataset = MusicDataset(split="test", mfcc_file="mfccs.csv")
+    if(dataset_type=="melspectro"):
+        data_path = os.path.join(get_dataset_base_folder(),
+                                  "melspectro_songs_test_new.pickle")
+        file_names_file = os.path.join(get_dataset_base_folder(),
+                     "melspectro_filenames_test.pickle")
+        test_dataset = MelSpectroDataset(data_path, file_names_file=file_names_file)
+    elif(dataset_type=="vgg_features"):
+        data_path = os.path.join(get_preprocessed_data_path("test"),
+                                  "vgg_test.pickle")
+        file_names_file = os.path.join(get_dataset_base_folder(),
+                     "test.csv")
+        test_dataset = MelSpectroDataset(data_path, file_names_file=file_names_file)
+    else:
+        test_dataset = MusicDataset(split="test", mfcc_file="mfccs.csv")
     print("#"*50)
     print("Datasets created")
 
@@ -229,7 +259,7 @@ def run_algorithm(algo_config: str, dataset: MusicDataset, experiment_name):
         train_dataset = MusicDataset(split="train", mfcc_file="mfccs.csv")
         predictions = run_decisionTree(algo_config, train_dataset, dataset)
     elif(algo_config["type"]=="neural-network"):
-        predictions = run_nn_model(algo_config, dataset, experiment_name)
+        predictions = run_nn_model(algo_config['model_path'], dataset, experiment_name)
 
     else:
         raise ValueError("Algorithm not known!")
