@@ -1,5 +1,5 @@
 {
-    "experiment_name": "nn-test-5-layer-lr0.25-2",
+    "experiment_name": "cnn1-test",
     "algorithm": "neural-network",
     "neural-network": {
         "type": "neural-network",

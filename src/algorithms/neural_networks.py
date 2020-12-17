@@ -37,15 +37,18 @@ def run_nn_model(model_path,
         test_files, X_test, _ = test_dataset.get_whole_dataset()
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    X_test = torch.tensor(X_test).float().to(device)
 
     # Apply model
     model = torch.load(model_path, map_location=device)
 
     # Predict
     print('Predicting classes...')
-    result = model(X_test)
-    result = np.argmax(result.detach().cpu().numpy(), axis=1)
+    res_all = []
+    for X in X_test:
+        X = torch.tensor(X).unsqueeze(0).float().to(device)
+        result = model(X_test)
+        result = np.argmax(result.detach().cpu().numpy(), axis=1)
+        res_all.append(result)
     predictions = {}
     for i, file_id in enumerate(test_files):
         predictions[file_id] = result[i]+1 # Labels not zero_based in the nn model
