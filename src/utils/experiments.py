@@ -226,8 +226,8 @@ def run_test(config: str):
     elif(dataset_type=="vgg_features"):
         data_path = os.path.join(get_preprocessed_data_path("test"),
                                   "vgg_test.pickle")
-        file_names_file = os.path.join(get_dataset_base_folder(),
-                     "test.csv")
+        file_names_file = os.path.join(get_preprocessed_data_path("test"),
+                     "valid_ids_sorted.pickle")
         test_dataset = MelSpectroDataset(data_path, file_names_file=file_names_file)
     else:
         test_dataset = MusicDataset(split="test", mfcc_file="mfccs.csv")
