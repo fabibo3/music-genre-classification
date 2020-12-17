@@ -231,7 +231,8 @@ class MelSpectroDataset(torch.utils.data.Dataset):
         # Load filenames if possible
         if(self.contains_file_names):
             self.file_names = pickle.load(open(self._file_names_file, "rb"))
-            self.file_names = [f"{int(v):06}" + ".mp3" for v in self.file_names]
+            self.file_names = np.asarray([f"{int(v):06}" + ".mp3" for v in\
+                                          self.file_names])
             assert(len(self.file_names) == self.data.shape[0])
         else:
             self.file_names = None
