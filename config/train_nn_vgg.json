@@ -1,0 +1,30 @@
+{
+    "experiment_name": "cnn-vgg-1",
+    "algorithm": "neural-network",
+    "neural-network": {
+        "type": "neural-network",
+        "architecture": "CNN_2",
+        "dropout_prob": 0.5,
+        "epochs": 100,
+        "learning_rate": 0.25,
+        "loss_function": "CrossEntropy",
+        "early_stop": true,
+        "eval_metric": "Accuracy",
+        "weight_decay": 0.01,
+        "lr_decay_every": 80,
+        "decay_rate": 0.1,
+        "log_nth": 100,
+        "batch_size": 100
+    },
+    "mode": "parameter-search",
+    "dataset": {
+        "train_split": 80,
+        "val_split": 20,
+        "features": "vgg_features",
+        "shuffle": true
+    },
+    "parameter-search": {
+        "exterior_cross_validation": false,
+        "internal_cross_validation": false
+    }
+}

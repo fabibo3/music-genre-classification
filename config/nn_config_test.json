@@ -1,12 +1,12 @@
 {
-    "experiment_name": "cnn1-test",
+    "experiment_name": "cnn-vgg-test-1",
     "algorithm": "neural-network",
     "neural-network": {
         "type": "neural-network",
-        "model_path": "/home/fabi/workspace_python/music-genre-classification/experiments/cnn1/best.model"
+        "model_path": "music-genre-classification/experiments/cnn1/best.model"
     },
     "mode": "test",
     "dataset": {
-        "features": "melspectro"
+        "features": "vgg_features"
     }
 }

@@ -1,0 +1,12 @@
+{
+    "experiment_name": "cnn-vgg-test-2",
+    "algorithm": "neural-network",
+    "neural-network": {
+        "type": "neural-network",
+        "model_path": "music-genre-classification/experiments/cnn-vgg-2/best.model"
+    },
+    "mode": "test",
+    "dataset": {
+        "features": "vgg_features"
+    }
+}
