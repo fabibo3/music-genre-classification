@@ -13,7 +13,7 @@
         "weight_decay": 0.01,
         "lr_decay_every": 100,
         "decay_rate": 0.1,
-        "log_nth": 10,
+        "log_nth": 100,
         "batch_size": 100
     },
     "mode": "parameter-search",
