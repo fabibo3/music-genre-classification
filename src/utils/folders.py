@@ -45,4 +45,4 @@ def get_preprocessed_data_path(split: str) -> str:
     @param split: "train" or "test"
     """
     assert(split=="test" or split=="train")
-    return os.path.join(data_base_folder,split,"preprocessed/")
+    return path.join(data_base_folder,split,"preprocessed/")
