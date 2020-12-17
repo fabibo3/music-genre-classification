@@ -46,7 +46,7 @@ def run_nn_model(model_path,
     res_all = []
     for X in X_test:
         X = torch.tensor(X).unsqueeze(0).float().to(device)
-        result = model(X_test)
+        result = model(X)
         result = np.argmax(result.detach().cpu().numpy(), axis=1)
         res_all.append(result)
     predictions = {}
